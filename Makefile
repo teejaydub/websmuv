@@ -111,7 +111,7 @@ endif
 	make nginx-enable-redirect80
 
 $(configDir)/localhost.pem: $(configDir)/hostname.txt
-	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/O=$(tld)/CN=$localhost"
+	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/O=$(tld)/CN=$localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
 nginx-enable-maintenance:
 	sudo rm /etc/nginx/sites-enabled/*  # in case hostname has changed
@@ -164,7 +164,7 @@ update-middle:
 	make nginx-configure
 
 update-end:
-	make nginx-disable-maintenance nginx-enable-redirect nginx-reload
+	make nginx-disable-maintenance nginx-enable-redirect80 nginx-reload
 	make nginx-status
 
 update: update-start update-middle update-end
