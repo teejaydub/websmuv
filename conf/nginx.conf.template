@@ -1,0 +1,26 @@
+# Generic for HTTPS to the given hostname.
+server {
+    server_name  $tld $hostname;
+
+    # Redirect from example.com to www.example.com.
+    if ($host = $tld) {
+        return 301 https://$hostname$request_uri;
+    }
+
+    # Use the Let's Encrypt certificates for HTTPS.
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/$hostname/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$hostname/privkey.pem;
+    # include /etc/letsencrypt/options-ssl-nginx.conf;
+
+    # Use our custom generated Diffie-Helman parameters.
+    ssl_dhparam /etc/pki/nginx/dhparams.pem;
+
+    ssl_session_cache    shared:SSL:1m;
+    ssl_session_timeout  5m;
+
+    ssl_ciphers  HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers  on;
+
+    include $configDir/nginx-app.conf;
+}

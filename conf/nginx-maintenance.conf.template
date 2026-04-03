@@ -1,0 +1,37 @@
+# Just show a maintenance message.
+server {
+    listen 80;
+    server_name $tld $hostname;
+
+    root /var/www/html/maintenance;
+    index index.html;
+    location / {
+            try_files $uri $uri/ =404;
+    }
+}
+
+
+server {
+    server_name  $tld $hostname;
+
+    root /var/www/html/maintenance;
+    index index.html;
+    location / {
+            try_files $uri $uri/ =404;
+    }
+
+    # Use the Let's Encrypt certificates for HTTPS.
+    #listen 443 ssl;
+    #ssl_certificate /etc/letsencrypt/live/$hostname/fullchain.pem;
+    #ssl_certificate_key /etc/letsencrypt/live/$hostname/privkey.pem;
+    #include /etc/letsencrypt/options-ssl-nginx.conf;
+
+    # Use our custom generated Diffie-Helman parameters.
+    ssl_dhparam /etc/pki/nginx/dhparams.pem;
+
+    ssl_session_cache    shared:SSL:1m;
+    ssl_session_timeout  5m;
+
+    ssl_ciphers  HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers  on;
+}

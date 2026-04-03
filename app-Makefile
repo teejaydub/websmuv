@@ -1,0 +1,14 @@
+ssh:
+	cd websmuv && make ssh
+
+nginx-start:
+	cd websmuv && make nginx-start
+
+nginx-stop:
+	cd websmuv && make nginx-stop
+
+nginx-maintenance:
+	make nginx-configure nginx-enable-maintenance nginx-disable-redirect80 nginx-reload nginx-status
+
+nginx-normal:
+	make nginx-configure nginx-disable-maintenance nginx-disable-redirect80 nginx-reload nginx-status

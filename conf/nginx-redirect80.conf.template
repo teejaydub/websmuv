@@ -1,0 +1,6 @@
+# Redirect all unencrypted requests to HTTPS at www.example.com.
+server {
+    listen 80;
+    server_name $tld $hostname;
+    return 301 https://$hostname$request_uri;
+}
