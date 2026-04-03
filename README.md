@@ -14,11 +14,12 @@ Features provided:
 * Quick setup - put an existing project on a new EC2 instance in under a minute.
 * Configures a maintenance mode in nginx, for an "unavailable due to system maintenance" message.
 * Sets up and renews certificates transparently via Let's Encrypt, including during development.
+* Configure custom settings for nginx to connect to your application server, cleanly and separately from basic behavior.
 * Warns via email when disk space is low.
 * Bans IP addresses temporarily when suspicious activity is detected.
 * Sets up simple console diagnostic tools like htop and iotop.
 * Test connectivity before deployment.
-* Quick redeployment if you're switching from an existing instance.
+* Quick redeployment if you're switching from an existing instance to a new one.
 * Quick and reliable instance resizing.
 
 The general philosophy is that all configuration should be easy to find in a central location, documented, 
@@ -51,6 +52,7 @@ Then edit the newly-created files in `../conf`:
 * `tld.txt` - the domain name, so that we can redirect WWW requests from example.com to www.example.com.
 * `hostname.txt` - the full subdomain used for hosting this app, e.g. `www.example.com`.
   This can be the instance's public IP address during testing.
+  It can also be `localhost` for local testing - this will bypass Let's Encrypt and use a self-signed cert instead.
 * `email.txt` - the email address to use for sending alerts and creating certs, e.g. `service@example.com`.
 * `instance.txt` - the instance ID of the EC2 instance used for production, e.g. `i-1234abcdef`. 
 * `instance-type.txt` - the instance type, e.g. `t3.micro`.
@@ -116,9 +118,16 @@ git commit...
 ```
 Then on the server:
 ```
-cd myapp
-make update update-hostname
+cd myapp/websmuv
+make update
 ```
+If you have other tasks to do when updating the server, have your project's `make update` target
+call `cd websmuv && make update`, or use `make update-start update-middle update-end` and mix those
+pieces with the rest of your update tasks.
+
+The maintenance mode message will be returned by nginx while the rest of the update is happening.
+
+## Resizing an EC2 instance
 
 To resize the server EC2 instance, do this on the **development machine**:
 ```
@@ -128,3 +137,16 @@ make update-instance-type
 ```
 The server will be gracefully shut down, resized, restarted, and the services restarted.
 Commit and tag after completion, to document that it was done.
+
+
+## Maintenance mode
+
+To put the whole app into maintenance mode, first edit `conf/maintenance.html`.  Then, from the main project:
+```
+make nginx-maintenance
+```
+
+To go back to normal hosting:
+```
+make nginx-normal
+```

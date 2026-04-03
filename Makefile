@@ -1,13 +1,13 @@
 configDir = $(shell pwd)/../conf
 
 ifeq ("$(wildcard $(configDir)/hostname.txt)", "")
-hostname = 127.0.0.1
+hostname = localhost
 else
 hostname = $(shell cat $(configDir)/hostname.txt)
 endif
 
 ifeq ("$(wildcard $(configDir)/tld.txt)", "")
-tld = localhost
+tld = example.com
 else
 tld = $(shell cat $(configDir)/tld.txt)
 endif
@@ -31,17 +31,17 @@ config-dir:
 
 config-tld:
 ifeq ("$(wildcard $(configDir)/tld.txt)", "")
-	echo example.com > $(configDir)/tld.txt
+	echo $(tld) > $(configDir)/tld.txt
 endif
 
 config-hostname:
 ifeq ("$(wildcard $(configDir)/hostname.txt)", "")
-	echo www.example.com > $(configDir)/hostname.txt
+	echo $(hostname) > $(configDir)/hostname.txt
 endif
 
 config-email:
 ifeq ("$(wildcard $(configDir)/email.txt)", "")
-	echo service@example.com > $(configDir)/email.txt
+	echo service@$(tld) > $(configDir)/email.txt
 endif
 
 config-instance:
@@ -97,13 +97,21 @@ nginx-install:
 
 # Create and enable the app site with the current configuration.
 nginx-configure:
+ifeq ("$(hostname)", "localhost")
+	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-localhost.conf.template > nginx.conf
+	make $(configDir)/localhost.pem
+else
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx.conf.template > nginx.conf
+endif
 	sudo mv nginx.conf /etc/nginx/sites-available/$(hostname)
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-maintenance.conf.template > maintenance.conf
 	sudo mv maintenance.conf /etc/nginx/sites-available/maintenance.conf
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-redirect80.conf.template > redirect80.conf
 	sudo mv redirect80.conf /etc/nginx/sites-available/redirect80.conf
 	make nginx-enable-redirect80
+
+$(configDir)/localhost.pem: $(configDir)/hostname.txt
+	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/O=$(tld)/CN=$localhost"
 
 nginx-enable-maintenance:
 	sudo rm /etc/nginx/sites-enabled/*  # in case hostname has changed
@@ -147,9 +155,16 @@ fail2ban-install:
 
 
 ###########################################################################
-# Updating
+# Updating everything
 
-update:
+update-start:
 	make nginx-enable-maintenance nginx-start
+
+update-middle:
 	make nginx-configure
-	make nginx-disable-maintenance nginx-reload
+
+update-end:
+	make nginx-disable-maintenance nginx-enable-redirect nginx-reload
+	make nginx-status
+
+update: update-start update-middle update-end
