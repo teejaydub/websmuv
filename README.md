@@ -76,10 +76,12 @@ You'll need to configure ssh with the right credentials,
 usually involving editing ~/.ssh/config.
 E.g., add this section to that file and put the .pem in ~/.ssh as well:
 
+```
   Host www.example.com
     IdentityFile ~/.ssh/my-favorite.pem
     IdentitiesOnly yes
     User ec2-user
+```
 
 Then log into the instance from your app project on the dev machine:
 ```
@@ -106,6 +108,25 @@ Set up all components on the instance:
 cd myapp/websmuv
 make install
 ```
+If you do this on your dev machine, then browse to `http://localhost`, you'll normally see the default nginx 
+welcome page, or other static HTML content if you have that on your system (by default, in `/var/www/html`).
+
+## Maintenance mode
+
+To put the whole app into maintenance mode, first edit `conf/maintenance.html`.  Then, from the main project:
+```
+make nginx-maintenance
+```
+
+To go back to normal hosting:
+```
+make nginx-normal
+```
+
+The text for this page is taken from `conf/maintenance.html` from the app project, and exists
+independently from any other HTML hosted by the nginx sever normally.
+
+Edits to `conf/maintenance.html` will take effect when `make nginx-maintenance` is next done in the parent app.
 
 ## Changing configuration
 
@@ -137,16 +158,3 @@ make update-instance-type
 ```
 The server will be gracefully shut down, resized, restarted, and the services restarted.
 Commit and tag after completion, to document that it was done.
-
-
-## Maintenance mode
-
-To put the whole app into maintenance mode, first edit `conf/maintenance.html`.  Then, from the main project:
-```
-make nginx-maintenance
-```
-
-To go back to normal hosting:
-```
-make nginx-normal
-```
