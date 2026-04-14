@@ -24,10 +24,16 @@ depends:
 	uv --version || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Creates default config files if they don't already exist, in ../config.
-config: config-dir config-hostname config-email config-instance config-instance-type config-maintenance config-diskalert config-nginx
+config: config-dir config-pem config-hostname config-email config-instance config-instance-type config-maintenance config-diskalert config-nginx
 
 config-dir:
 	mkdir -p $(configDir)
+
+config-pem:
+ifeq ("$(wildcard $(configDir)/.gitignore)", "")
+	echo "server.pem" > $(configDir)/.gitignore
+endif
+	chmod go-rw $(configDir)/server.pem
 
 config-tld:
 ifeq ("$(wildcard $(configDir)/tld.txt)", "")
@@ -74,7 +80,7 @@ endif
 # Connecting to the server
 
 ssh:
-	ssh ubuntu@$(shell cat $(configDir)/hostname.txt)
+	ssh ubuntu@$(shell cat $(configDir)/hostname.txt) -i $(configDir)/server.pem
 
 
 ###########################################################################

@@ -56,7 +56,7 @@ Then edit the newly-created files in `../conf`:
 * `email.txt` - the email address to use for sending alerts and creating certs, e.g. `service@example.com`.
 * `instance.txt` - the instance ID of the EC2 instance used for production, e.g. `i-1234abcdef`. 
 * `instance-type.txt` - the instance type, e.g. `t3.micro`.
-* `server.pem` - the credentials for logging into the EC2 instance using SSH; you must create this and it probably shouldn't be committed even to a private repo - especially if shared among multiple projects
+* `server.pem` - the credentials for logging into the EC2 instance using SSH; you must create this and it probably shouldn't be committed even to a private repo - especially if shared among multiple projects.
 * `maintenance.html` - the page served during maintenance mode
 * `diskalert.conf` - configuration for sending emails when disk usage rises; set the disks used and their thresholds or use defaults
 * `nginx.conf.template` - extra configuration for the app under Nginx; leave $hostname etc. there so it'll be auto-configured later.
@@ -72,21 +72,12 @@ Commit and push your changes in the app project.
 
 ## Configure ssh
 
-You'll need to configure ssh with the right credentials,
-usually involving editing ~/.ssh/config.
-E.g., add this section to that file and put the .pem in ~/.ssh as well:
-
-```
-  Host www.example.com
-    IdentityFile ~/.ssh/my-favorite.pem
-    IdentitiesOnly yes
-    User ec2-user
-```
-
-Then log into the instance from your app project on the dev machine:
+Once you copy your server's SSH certificate into `conf/server.pem`,
+you can log into the server from your dev machine with:
 ```
 make ssh
 ```
+This works both from the parent project and from the websmuv directory.
 
 ## Deployment
 
