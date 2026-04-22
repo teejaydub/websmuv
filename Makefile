@@ -33,7 +33,9 @@ config-pem:
 ifeq ("$(wildcard $(configDir)/.gitignore)", "")
 	echo "server.pem" > $(configDir)/.gitignore
 endif
+ifneq ("$(wildcard $(configDir)/server.pem)", "")
 	chmod go-rw $(configDir)/server.pem
+endif
 
 config-tld:
 ifeq ("$(wildcard $(configDir)/tld.txt)", "")
