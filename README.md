@@ -126,7 +126,7 @@ To change the hostname (e.g. when going to production and a public-facing subdom
 do this on the **development machine**:
 ```
 cd myapp
-nano conf/hostname.txt
+echo new.example.com > conf/hostname.txt
 git commit...
 ```
 Then on the server:

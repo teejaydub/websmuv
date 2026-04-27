@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Run the LetsEncrypt certbot program to renew any
+# certificates used for HTTPS.  They are good for 90 days and 
+# the program only renews them if they're due in less than 30 days.
+
+# Certbot uses port 80 to answer Let's Encrypt's challenge, proving that we own the hostname.
+# So, nginx can't be using port 80 while we do this.
+cd $pwd
+/usr/bin/make nginx-disable-redirect80
+
+/usr/bin/certbot renew
+
+# Restart nginx with the new certs.
+/usr/bin/make nginx-enable-redirect80
+/usr/bin/make nginx-reload

@@ -12,3 +12,20 @@ nginx-maintenance:
 
 nginx-normal:
 	cd websmuv && make nginx-configure nginx-disable-maintenance nginx-enable-redirect80 nginx-reload nginx-status
+
+nginx-follow-log:
+	cd websmuv && make nginx-follow-log
+
+nginx-log:
+	cd websmuv && make nginx-log
+
+
+websmuv-update-start:
+	cd websmuv && make update-start
+
+websmuv-update-middle:
+	cd websmuv && make update-middle
+
+websmuv-update-end:
+	cd websmuv && make update-end
+	

@@ -82,14 +82,14 @@ endif
 # Connecting to the server
 
 ssh:
-	ssh ubuntu@$(shell cat $(configDir)/hostname.txt) -i $(configDir)/server.pem
+	ssh ubuntu@$(hostname) -i $(configDir)/server.pem
 
 
 ###########################################################################
-# First-time server setup.
+# First-time server-side setup.
 # OK to run again - won't cause harm to existing configuration.
 
-install: config nginx-install nginx-start
+install: depends config nginx-install certbot-install fail2ban-install nginx-start
 
 nginx-install:
 	sudo apt install nginx
@@ -145,10 +145,10 @@ nginx-status:
 	sudo systemctl status nginx
 
 nginx-restart:
-	sudo systemctl restart nginx || sudo systemctl start nginx
+	@if [ "$(shell systemctl show nginx -P ActiveState)" = "active" ]; then sudo systemctl restart nginx; echo nginx restarted; else sudo systemctl start nginx; echo nginx started; fi
 
 nginx-reload:
-	sudo systemctl reload nginx
+	@if [ "$(shell systemctl show nginx -P ActiveState)" = "active" ]; then sudo systemctl reload nginx; echo nginx reloaded; else sudo systemctl start nginx; echo nginx started; fi
 
 nginx-follow-log:
 	sudo tail -F /var/log/nginx/access.log
@@ -156,8 +156,22 @@ nginx-follow-log:
 nginx-log:
 	sudo less /var/log/nginx/access.log
 
+
+certbot-install:
+	sudo apt install certbot python3-certbot-nginx
+	# Stop serving http and https entirely if we're setting up a new cert.
+	make nginx-stop
+	sudo certbot certonly --debug --standalone -d $(hostname)
+	# Use this script to carefully stop redirecting port 80 while renewing.
+	# It will restart the redirection when it's done.
+	uv run python -m template hostname=$(hostname) tld=$(tld) pwd=$(shell pwd) < conf/certbotrenew.template > certbotrenew.sh
+	sudo mv -f certbotrenew.sh /etc/cron.weekly
+	make nginx-start
+
+
 fail2ban-install:
 	# Make the sample fail2ban jail active.
+	sudo apt install fail2ban
 	sudo ln -s -f $(configDir)/jail.local /etc/fail2ban
 	sudo systemctl restart fail2ban
 
@@ -166,7 +180,7 @@ fail2ban-install:
 # Updating everything
 
 update-start:
-	make nginx-enable-maintenance nginx-start
+	make nginx-enable-maintenance nginx-reload
 
 update-middle:
 	make nginx-configure
