@@ -43,7 +43,6 @@ Uses `make` because it's universally available and compatible, and organizes sho
 In the app project, usually on a development machine:
 ```
 git submodule add https://github.com/teejaydub/websmuv.git
-git submodule sync --recursive
 git submodule update --recursive
 cd websmuv
 make depends config
