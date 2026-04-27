@@ -42,8 +42,9 @@ Uses `make` because it's universally available and compatible, and organizes sho
 
 In the app project, usually on a development machine:
 ```
-git submodule add https://www.github.com/teejaydub/websmuv.git
+git submodule add https://github.com/teejaydub/websmuv.git
 git submodule sync --recursive
+git submodule update --recursive
 cd websmuv
 make depends config
 ```
@@ -84,7 +85,7 @@ This works both from the parent project and from the websmuv directory.
 
 Finish configuring a fresh instance and clone the parent app project into the instance:
 ```
-sudo apt update && apt upgrade  # as usual, may need reboot
+sudo apt update && apt upgrade  # as usual for a fresh instance, may need reboot
 sudo apt install git make
 git clone https://www.github.com/...myapp --recurse-submodules
 ```
