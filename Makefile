@@ -163,12 +163,15 @@ certbot-install:
 	@echo
 	@echo Setting up Certbot for host $(hostname)...
 	sudo apt install -y certbot python3-certbot-nginx
+	make certbot-configure
+
+certbot-configure:
 	# Stop serving http and https entirely if we're setting up a new cert.
 	make nginx-stop
 	sudo certbot certonly --debug --standalone -d $(hostname)
 	# Use this script to carefully stop redirecting port 80 while renewing.
 	# It will restart the redirection when it's done.
-	uv run python -m template hostname=$(hostname) tld=$(tld) pwd=$(shell pwd) < conf/certbotrenew.template > certbotrenew.sh
+	uv run python -m template hostname=$(hostname) tld=$(tld) pwd=$(shell pwd) < conf/certbotrenew.sh.template > certbotrenew.sh
 	sudo mv -f certbotrenew.sh /etc/cron.weekly
 	make nginx-start
 
