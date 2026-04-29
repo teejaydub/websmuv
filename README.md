@@ -45,7 +45,9 @@ In the app project, usually on a development machine:
 git submodule add https://github.com/teejaydub/websmuv.git
 git submodule update --recursive
 cd websmuv
-make depends config
+make depends
+bash  # to update paths
+make config
 ```
 
 Then edit the newly-created files in `../conf`:
@@ -97,7 +99,9 @@ git submodule update --remote --merge --recursive
 
 Set up all components on the instance:
 ```
-cd myapp/websmuv
+cd websmuv
+make depends
+bash  # to update paths
 make install
 ```
 If you do this on your dev machine, then browse to `http://localhost`, you'll normally see the default nginx 

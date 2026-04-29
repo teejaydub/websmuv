@@ -19,7 +19,7 @@ all: depends config
 # Setup within the dev or server environment.
 
 depends:
-	sudo apt install curl
+	sudo apt install -y curl
 	# UV, only if not already installed
 	uv --version || curl -LsSf https://astral.sh/uv/install.sh | sh
 
@@ -92,7 +92,7 @@ ssh:
 install: depends config nginx-install certbot-install fail2ban-install nginx-start
 
 nginx-install:
-	sudo apt install nginx
+	sudo apt install -y nginx
 
 	sudo ufw allow http
 	sudo ufw allow https
@@ -158,7 +158,7 @@ nginx-log:
 
 
 certbot-install:
-	sudo apt install certbot python3-certbot-nginx
+	sudo apt install -y certbot python3-certbot-nginx
 	# Stop serving http and https entirely if we're setting up a new cert.
 	make nginx-stop
 	sudo certbot certonly --debug --standalone -d $(hostname)
@@ -171,7 +171,7 @@ certbot-install:
 
 fail2ban-install:
 	# Make the sample fail2ban jail active.
-	sudo apt install fail2ban
+	sudo apt install -y fail2ban
 	sudo ln -s -f $(configDir)/jail.local /etc/fail2ban
 	sudo systemctl restart fail2ban
 
