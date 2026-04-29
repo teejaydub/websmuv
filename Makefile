@@ -95,6 +95,7 @@ nginx-install:
 	sudo apt install -y nginx
 
 	sudo ufw enable
+	sudo ufw allow ssh
 	sudo ufw allow http
 	sudo ufw allow https
 
