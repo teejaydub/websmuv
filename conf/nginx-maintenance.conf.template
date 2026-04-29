@@ -21,10 +21,9 @@ server {
     }
 
     # Use the Let's Encrypt certificates for HTTPS.
-    #listen 443 ssl;
-    #ssl_certificate /etc/letsencrypt/live/$hostname/fullchain.pem;
-    #ssl_certificate_key /etc/letsencrypt/live/$hostname/privkey.pem;
-    #include /etc/letsencrypt/options-ssl-nginx.conf;
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/$hostname/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$hostname/privkey.pem;
 
     # Use our custom generated Diffie-Helman parameters.
     ssl_dhparam /etc/pki/nginx/dhparams.pem;
