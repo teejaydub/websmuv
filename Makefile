@@ -105,6 +105,8 @@ nginx-install:
 
 # Create and enable the app site with the current configuration.
 nginx-configure:
+	@echo
+	@echo Setting up Nginx for host $(hostname)...
 ifeq ("$(hostname)", "localhost")
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-localhost.conf.template > nginx.conf
 	make $(configDir)/localhost.pem
@@ -158,6 +160,8 @@ nginx-log:
 
 
 certbot-install:
+	@echo
+	@echo Setting up Certbot for host $(hostname)...
 	sudo apt install -y certbot python3-certbot-nginx
 	# Stop serving http and https entirely if we're setting up a new cert.
 	make nginx-stop
