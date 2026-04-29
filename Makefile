@@ -89,11 +89,12 @@ ssh:
 # First-time server-side setup.
 # OK to run again - won't cause harm to existing configuration.
 
-install: depends config nginx-install certbot-install fail2ban-install nginx-start
+install: depends config nginx-install certbot-install fail2ban-install nginx-restart
 
 nginx-install:
 	sudo apt install -y nginx
 
+	sudo ufw enable
 	sudo ufw allow http
 	sudo ufw allow https
 
@@ -107,6 +108,7 @@ nginx-install:
 nginx-configure:
 	@echo
 	@echo Setting up Nginx for host $(hostname)...
+	sudo cp conf/nginx-slow.conf /etc/nginx/conf.d
 ifeq ("$(hostname)", "localhost")
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-localhost.conf.template > nginx.conf
 	make $(configDir)/localhost.pem
@@ -138,7 +140,7 @@ nginx-disable-redirect80:
 	sudo rm -f /etc/nginx/sites-enabled/redirect80.conf
 
 nginx-start:
-	-sudo systemctl reload nginx || sudo systemctl restart nginx || sudo systemctl start nginx
+	sudo systemctl start nginx
 
 nginx-stop:
 	sudo systemctl stop nginx
