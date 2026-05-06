@@ -84,6 +84,9 @@ endif
 ssh:
 	ssh ubuntu@$(hostname) -i $(configDir)/server.pem
 
+instance-start:
+	aws ec2 start-instances $(shell cat $(configDir)/instance.txt)
+
 
 ###########################################################################
 # First-time server-side setup.
