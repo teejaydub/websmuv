@@ -95,7 +95,7 @@ instance-start:
 install: depends config nginx-install certbot-install fail2ban-install nginx-restart
 
 nginx-install:
-	sudo apt install -y nginx
+	sudo apt install -y nginx ufw
 
 	sudo ufw enable
 	sudo ufw allow ssh
@@ -166,13 +166,16 @@ nginx-log:
 
 
 certbot-install:
+ifneq ("$(hostname)", "localhost")
 	@echo
 	@echo Setting up Certbot for host $(hostname)...
 	sudo apt install -y certbot python3-certbot-nginx
 	make certbot-configure
+endif
 
 certbot-configure:
 	# Stop serving http and https entirely if we're setting up a new cert.
+ifneq ("$(hostname)", "localhost")
 	make nginx-stop
 	sudo certbot certonly --debug --standalone -d $(hostname)
 	# Use this script to carefully stop redirecting port 80 while renewing.
@@ -180,7 +183,7 @@ certbot-configure:
 	uv run python -m template hostname=$(hostname) tld=$(tld) pwd=$(shell pwd) < conf/certbotrenew.sh.template > certbotrenew.sh
 	sudo mv -f certbotrenew.sh /etc/cron.weekly
 	make nginx-start
-
+endif
 
 fail2ban-install:
 	# Make the sample fail2ban jail active.
