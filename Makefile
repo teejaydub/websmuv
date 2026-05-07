@@ -84,8 +84,12 @@ endif
 ssh:
 	ssh ubuntu@$(hostname) -i $(configDir)/server.pem
 
+instanceID = $(shell cat $(configDir)/instance.txt)
 instance-start:
-	aws ec2 start-instances $(shell cat $(configDir)/instance.txt)
+	@aws ec2 start-instances $(instanceID)
+
+instance-state:
+	@aws ec2 describe-instances --instance-ids $(instanceID) --query "Reservations[*].Instances[*].State.Name" --output text
 
 
 ###########################################################################
