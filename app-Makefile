@@ -38,3 +38,7 @@ instance-start:
 	
 instance-state:
 	@$(MAKE) --no-print-directory -C websmuv instance-state
+
+
+confirm:
+	@$(MAKE) --no-print-directory -C websmuv confirm

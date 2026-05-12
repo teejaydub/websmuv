@@ -98,7 +98,18 @@ instance-state:
 # First-time server-side setup.
 # OK to run again - won't cause harm to existing configuration.
 
-install: depends config nginx-install certbot-install fail2ban-install nginx-restart
+install: depends config set-hostname nginx-install certbot-install fail2ban-install nginx-restart
+
+confirm:
+	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} = y ]
+
+set-hostname:
+	@echo
+ifneq ("$(hostname)", "$(shell hostname)")
+	@echo "This will change this machine's hostname from $(shell hostname) to $(hostname)."
+	@make confirm
+	sudo cp $(configDir)/hostname.txt /etc/hostname
+endif
 
 nginx-install:
 	sudo apt install -y nginx ufw
