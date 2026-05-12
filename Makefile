@@ -167,13 +167,13 @@ nginx-stop:
 	sudo systemctl stop nginx
 
 nginx-status:
-	sudo systemctl status nginx
+	sudo systemctl status nginx --no-pager
 
 nginx-restart:
 	@if [ "$(shell systemctl show nginx -P ActiveState)" = "active" ]; then sudo systemctl restart nginx; echo nginx restarted; else sudo systemctl start nginx; echo nginx started; fi
 
 nginx-reload:
-	@if [ "$(shell systemctl show nginx -P ActiveState)" = "active" ]; then sudo systemctl reload nginx; echo nginx reloaded; else sudo systemctl start nginx; echo nginx started; fi
+	sudo systemctl reload-or-restart nginx;
 
 nginx-follow-log:
 	sudo tail -F /var/log/nginx/access.log
