@@ -19,7 +19,7 @@ all: depends config
 # Setup within the dev or server environment.
 
 depends:
-	sudo apt install -y curl
+	sudo apt install -y curl toilet
 	# UV, only if not already installed
 	uv --version || curl -LsSf https://astral.sh/uv/install.sh | sh
 
@@ -82,11 +82,13 @@ endif
 # Connecting to the server
 
 ssh:
-	ssh ubuntu@$(hostname) -i $(configDir)/server.pem
+	@toilet -t $(hostname) -f smblock -F border
+	-ssh ubuntu@$(hostname) -i $(configDir)/server.pem
+	@toilet -f smblock -F border $(shell hostname)
 
 instanceID = $(shell cat $(configDir)/instance.txt)
 instance-start:
-	@aws ec2 start-instances $(instanceID)
+	@aws ec2 start-instances --instance-ids $(instanceID) --query "StartingInstances[*].CurrentState.Name" --output text
 
 instance-state:
 	@aws ec2 describe-instances --instance-ids $(instanceID) --query "Reservations[*].Instances[*].State.Name" --output text
