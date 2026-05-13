@@ -202,11 +202,11 @@ ifneq ("$(hostname)", "localhost")
 	make https-start
 endif
 
-# Renews the certificate, if it's time; disables nginx's HTTP response during the process.
+# Renews the certificate, if it's time; disables HTTP redirection on port 80 during the process.
 certs-renew: 
-	$(MAKE) nginx-disable-redirect80
+	$(MAKE) https-disable-redirect80
 	-sudo /usr/bin/certbot renew
-	$(MAKE) nginx-enable-redirect80 nginx-reload
+	$(MAKE) https-enable-redirect80 https-reload
 
 
 jail-install:
