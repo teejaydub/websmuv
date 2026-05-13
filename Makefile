@@ -87,10 +87,10 @@ ssh:
 	@toilet -f smblock -F border $(shell hostname)
 
 instanceID = $(shell cat $(configDir)/instance.txt)
-instance-start:
+vm-start:
 	@aws ec2 start-instances --instance-ids $(instanceID) --query "StartingInstances[*].CurrentState.Name" --output text
 
-instance-state:
+vm-state:
 	@aws ec2 describe-instances --instance-ids $(instanceID) --query "Reservations[*].Instances[*].State.Name" --output text
 
 
@@ -98,7 +98,7 @@ instance-state:
 # First-time server-side setup.
 # OK to run again - won't cause harm to existing configuration.
 
-install: depends config nginx-install certbot-install fail2ban-install nginx-restart set-hostname
+install: depends config https-install certs-install jail-install https-restart set-hostname
 
 confirm:
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} = y ]
@@ -111,7 +111,7 @@ ifneq ("$(hostname)", "$(shell hostname)")
 	sudo hostname --file $(configDir)/hostname.txt
 endif
 
-nginx-install:
+https-install:
 	sudo apt install -y nginx ufw
 
 	sudo ufw enable
@@ -123,10 +123,10 @@ nginx-install:
 	sudo mkdir -p /etc/pki/nginx/
 	sudo openssl dhparam -out /etc/pki/nginx/dhparams.pem 2048
 
-	make nginx-configure
+	make https-configure
 
 # Create and enable the app site with the current configuration.
-nginx-configure:
+https-configure:
 	@echo
 	@echo Setting up Nginx for host $(hostname)...
 	sudo cp conf/nginx-slow.conf /etc/nginx/conf.d
@@ -141,68 +141,68 @@ endif
 	sudo mv maintenance.conf /etc/nginx/sites-available/maintenance.conf
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-redirect80.conf.template > redirect80.conf
 	sudo mv redirect80.conf /etc/nginx/sites-available/redirect80.conf
-	make nginx-enable-redirect80
+	make https-enable-redirect80
 
 $(configDir)/localhost.pem: $(configDir)/hostname.txt
 	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/O=$(tld)/CN=$(localhost)" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
-nginx-enable-maintenance:
+https-enable-maintenance:
 	sudo rm /etc/nginx/sites-enabled/*  # in case hostname has changed
 	sudo ln -s -f /etc/nginx/sites-available/maintenance.conf /etc/nginx/sites-enabled/
 	sudo mkdir -p /var/www/html/maintenance
 	sudo cp -f $(configDir)/maintenance.html /var/www/html/maintenance/index.html
-nginx-disable-maintenance:
+https-disable-maintenance:
 	sudo rm /etc/nginx/sites-enabled/*
 	sudo ln -s -f /etc/nginx/sites-available/$(hostname) /etc/nginx/sites-enabled/
 
-nginx-enable-redirect80:
+https-enable-redirect80:
 	sudo ln -s -f /etc/nginx/sites-available/redirect80.conf /etc/nginx/sites-enabled/
-nginx-disable-redirect80:
+https-disable-redirect80:
 	sudo rm -f /etc/nginx/sites-enabled/redirect80.conf
 
-nginx-start:
+https-start:
 	sudo systemctl start nginx
 
-nginx-stop:
+https-stop:
 	sudo systemctl stop nginx
 
-nginx-status:
+https-status:
 	sudo systemctl status nginx --no-pager
 
-nginx-restart:
+https-restart:
 	@if [ "$(shell systemctl show nginx -P ActiveState)" = "active" ]; then sudo systemctl restart nginx; echo nginx restarted; else sudo systemctl start nginx; echo nginx started; fi
 
-nginx-reload:
+https-reload:
 	sudo systemctl reload-or-restart nginx;
 
-nginx-follow-log:
+https-follow-log:
 	sudo tail -F /var/log/nginx/access.log
 
-nginx-log:
+https-log:
 	sudo less /var/log/nginx/access.log
 
 
-certbot-install:
+certs-install:
 ifneq ("$(hostname)", "localhost")
 	@echo
 	@echo Setting up Certbot for host $(hostname)...
 	sudo apt install -y certbot python3-certbot-nginx
-	make certbot-configure
+	make certs-configure
 endif
 
-certbot-configure:
+certs-configure:
 	# Stop serving http and https entirely if we're setting up a new cert.
 ifneq ("$(hostname)", "localhost")
-	make nginx-stop
+	make https-stop
 	sudo certbot certonly --debug --standalone -d $(hostname)
 	# Use this script to carefully stop redirecting port 80 while renewing.
 	# It will restart the redirection when it's done.
 	uv run python -m template hostname=$(hostname) tld=$(tld) pwd=$(shell pwd) < conf/certbotrenew.sh.template > certbotrenew.sh
 	sudo mv -f certbotrenew.sh /etc/cron.weekly
-	make nginx-start
+	make https-start
 endif
 
-fail2ban-install:
+jail-install:
 	# Make the sample fail2ban jail active.
 	sudo apt install -y fail2ban
 	sudo ln -s -f $(configDir)/jail.local /etc/fail2ban

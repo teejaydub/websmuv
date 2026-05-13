@@ -11,20 +11,24 @@ where you expect low or periodic usage.  The cheapest solution is an AWS EC2 t3.
 
 Features provided:
 
-* Quick setup - put an existing project on a new EC2 instance in under a minute.
-* Configures a maintenance mode in nginx, for an "unavailable due to system maintenance" message.
+* Quick setup - put an existing project on a new VM in under a minute.
+* Configures a maintenance mode in the web server, for an "unavailable due to system maintenance" message.
 * Sets up and renews certificates transparently via Let's Encrypt, including during development.
-* Configure custom settings for nginx to connect to your application server, cleanly and separately from basic behavior.
+* Configure custom settings for the web server to connect to your application server, cleanly and separately from basic behavior.
 * Warns via email when disk space is low.
 * Bans IP addresses temporarily when suspicious activity is detected.
 * Sets up simple console diagnostic tools like htop and iotop.
 * Test connectivity before deployment.
-* Quick redeployment if you're switching from an existing instance to a new one.
-* Quick and reliable instance resizing.
+* Quick redeployment if you're switching from an existing VM to a new one.
+* Quick and reliable VM resizing.
 
-The general philosophy is that all configuration should be easy to find in a central location, documented, 
-and common across different apps, and the best practices for the underlying hosting infrastructure 
-should be shareable and easily upgradable.
+The general philosophy is that all configuration should be easy to find in a
+central location, documented, and common across different apps, and the best
+practices for the underlying hosting infrastructure should be shareable and
+easily upgradable.
+
+Uses `make` because it's universally available and compatible, and organizes
+short scripts into one file.
 
 ## How
 
@@ -36,7 +40,23 @@ Default config files are provided, and copied to the app conf during install if 
 
 Config files would be committed to a parent's **private** repository.
 
-Uses `make` because it's universally available and compatible, and organizes short scripts into one file.
+## Conventions
+
+Every action is a `make` target.
+
+Targets have prefixes for the general area they affect, which is implemented using a particular tool:
+
+- **vm** for controlling the virtual machine the server runs on, e.g. EC2 instances on AWS
+- **https** for the web server process - currently **nginx**
+- **certs** for creating and renewing certificates for TLS - currently **certbot**
+- **jail** for limiting requests from IP addresses associated with suspicious activity - currently **fail2ban**
+
+The idea is that an alternate branch of websmuv could substitute a different
+tool for any of these areas of functionality, but the target names could stay
+the same.  Configuration files tend to have the name of the tool
+(e.g., `nginx.conf`), so that you could keep those configuration files
+distinct in your project repository during a transition from one tool to
+another.
 
 ## Setup 
 

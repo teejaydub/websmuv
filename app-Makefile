@@ -1,26 +1,26 @@
 ssh:
 	@$(MAKE) --no-print-directory -C websmuv ssh
 
-nginx-start:
-	@$(MAKE) --no-print-directory -C websmuv nginx-start
+https-start:
+	@$(MAKE) --no-print-directory -C websmuv https-start
 
-nginx-stop:
-	@$(MAKE) --no-print-directory -C websmuv nginx-stop
+https-stop:
+	@$(MAKE) --no-print-directory -C websmuv https-stop
 
-nginx-maintenance:
-	@$(MAKE) --no-print-directory -C websmuv nginx-configure nginx-enable-maintenance nginx-disable-redirect80 nginx-reload nginx-status
+https-maintenance:
+	@$(MAKE) --no-print-directory -C websmuv https-configure https-enable-maintenance https-disable-redirect80 https-reload https-status
 
-nginx-normal:
-	@$(MAKE) --no-print-directory -C websmuv nginx-configure nginx-disable-maintenance nginx-enable-redirect80 nginx-reload nginx-status
+https-normal:
+	@$(MAKE) --no-print-directory -C websmuv https-configure https-disable-maintenance https-enable-redirect80 https-reload https-status
 
-nginx-reload:
-	@$(MAKE) --no-print-directory -C websmuv nginx-reload
+https-reload:
+	@$(MAKE) --no-print-directory -C websmuv https-reload
 
-nginx-follow-log:
-	@$(MAKE) --no-print-directory -C websmuv nginx-follow-log
+https-follow-log:
+	@$(MAKE) --no-print-directory -C websmuv https-follow-log
 
-nginx-log:
-	@$(MAKE) --no-print-directory -C websmuv nginx-log
+https-log:
+	@$(MAKE) --no-print-directory -C websmuv https-log
 
 
 websmuv-update-start:
@@ -33,11 +33,11 @@ websmuv-update-end:
 	@$(MAKE) --no-print-directory -C websmuv update-end
 
 	
-instance-start:
-	@$(MAKE) --no-print-directory -C websmuv instance-start
+vm-start:
+	@$(MAKE) --no-print-directory -C websmuv vm-start
 	
-instance-state:
-	@$(MAKE) --no-print-directory -C websmuv instance-state
+vm-state:
+	@$(MAKE) --no-print-directory -C websmuv vm-state
 
 
 confirm:
