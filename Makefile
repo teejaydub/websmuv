@@ -220,13 +220,13 @@ jail-install:
 # Updating everything
 
 update-start:
-	make nginx-enable-maintenance nginx-reload
+	make https-enable-maintenance https-reload
 
 update-middle:
-	make nginx-configure
+	make https-configure
 
 update-end:
-	make nginx-disable-maintenance nginx-enable-redirect80 nginx-reload
-	make nginx-status
+	make https-disable-maintenance https-enable-redirect80 https-reload
+	make https-status
 
 update: update-start update-middle update-end
