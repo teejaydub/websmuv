@@ -181,6 +181,19 @@ https-follow-log:
 https-log:
 	sudo less /var/log/nginx/access.log
 
+# Deactivates all the virtual servers run by nginx, and nginx itself, as well as fail2ban and certbot.
+# Especially useful if you `make install` on your dev system and want to remove the web services etc.
+# Assumes it's OK to leave apt packages installed when not in use.
+https-unconfigure: https-stop certs-unconfigure jail-unconfigure
+	sudo systemctl disable nginx
+	-sudo rm /etc/nginx/sites-enabled/*
+	-sudo rm /etc/nginx/sites-available/$(hostname)
+	-sudo rm /etc/nginx/sites-available/redirect80.conf
+	-sudo rm /etc/nginx/sites-available/maintenance.conf
+	-sudo rm /etc/nginx/conf.d/nginx-slow.conf
+	sudo ufw deny http
+	sudo ufw deny https
+
 
 certs-install:
 ifneq ("$(hostname)", "localhost")
@@ -212,12 +225,19 @@ certs-renew:
 	-sudo /usr/bin/certbot renew
 	$(MAKE) https-enable-redirect80 https-reload
 
+certs-unconfigure:
+	-sudo rm /etc/cron.weekly/certbotrenew.sh
+
 
 jail-install:
 	# Make the sample fail2ban jail active.
 	sudo apt install -y fail2ban
 	sudo ln -s -f $(configDir)/jail.local /etc/fail2ban
 	sudo systemctl restart fail2ban
+
+jail-unconfigure:
+	sudo systemctl stop fail2ban
+	sudo systemctl disable fail2ban
 
 
 ###########################################################################
