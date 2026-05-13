@@ -190,6 +190,8 @@ ifneq ("$(hostname)", "localhost")
 	make certs-configure
 endif
 
+# Set up certificates initially, and set up a task for renewal.
+# Don't use certbot's renew script, because we need special handling when it happens.
 certs-configure:
 	# Stop serving http and https entirely if we're setting up a new cert.
 ifneq ("$(hostname)", "localhost")
@@ -200,6 +202,8 @@ ifneq ("$(hostname)", "localhost")
 	uv run python -m template hostname=$(hostname) tld=$(tld) pwd=$(shell pwd) < conf/certbotrenew.sh.template > certbotrenew.sh
 	sudo mv -f certbotrenew.sh /etc/cron.weekly
 	make https-start
+	sudo systemctl stop certbot.timer
+	sudo systemctl disable certbot.timer
 endif
 
 # Renews the certificate, if it's time; disables HTTP redirection on port 80 during the process.
