@@ -83,6 +83,7 @@ Then edit the newly-created files in `../conf`:
 * `maintenance.html` - the page served during maintenance mode
 * `diskalert.conf` - configuration for sending emails when disk usage rises; set the disks used and their thresholds or use defaults
 * `nginx.conf.template` - extra configuration for the app under Nginx; leave $hostname etc. there so it'll be auto-configured later.
+* `jail.local` - includes instructions for banning IP addresses issuing too many requests per second.  See below.
 
 These files will be soft-linked from elsewhere when needed, so they can be edited in `myapp/conf`, 
 committed to Git, etc.
@@ -174,3 +175,28 @@ make update-instance-type
 ```
 The server will be gracefully shut down, resized, restarted, and the services restarted.
 Commit and tag after completion, to document that it was done.
+
+## Configuring fail2ban
+
+The `conf/jail.local` file specifies "jail" rules that control banning IP
+addresses due to excessive requests.  Several files work together to define this:
+
+* `conf/jail.local` - specifies individual sets of "jails"; by default, one for nginx.
+  Sets the time to ban for, defaulting to 5 minutes.  You can add more jails to this
+  as desired.
+* `nginx-slow.conf` - not meant to be overridden; defines a "slow" zone that's
+  restricted to one request per second, and devotes 1 MB of RAM to keeping
+  track of that (which can handle about 16,000 IP addresses).
+* `conf/nginx-app.conf` - specifies the locations for your app that are
+  subject to rate-limiting, and the maximum length of a "burst" that can
+  exceed the rate limit.  E.g., to allow a burst of 2 requests per second for
+  a given URL with no repercussions, use this directive:
+
+```
+    location /account/login/ {
+        limit_req zone=slow burst=2 nodelay;
+    }
+```
+
+After changing any of these files, run `make websmuv-update` or equivalent as usual.
+

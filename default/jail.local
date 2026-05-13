@@ -1,0 +1,9 @@
+[nginx-req-limit]
+
+enabled = true
+filter = nginx-limit-req
+action = iptables-multiport[name=ReqLimit, port="http,https", protocol=tcp]
+logpath = /var/log/nginx/error.log
+findtime = 5
+maxretry = 2
+bantime = 300

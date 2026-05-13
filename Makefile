@@ -24,7 +24,7 @@ depends:
 	uv --version || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Creates default config files if they don't already exist, in ../config.
-config: config-dir config-pem config-tld config-hostname config-email config-instance config-instance-type config-maintenance config-diskalert config-nginx
+config: config-dir config-pem config-tld config-hostname config-email config-instance config-instance-type config-defaults
 
 config-dir:
 	mkdir -p $(configDir)
@@ -62,21 +62,8 @@ ifeq ("$(wildcard $(configDir)/instance-type.txt)", "")
 	echo t3.micro > $(configDir)/instance-type.txt
 endif
 
-config-maintenance:
-ifeq ("$(wildcard $(configDir)/maintenance.html)", "")
-	cp default/maintenance.html $(configDir)/
-endif
-
-config-diskalert:
-ifeq ("$(wildcard $(configDir)/diskalert.conf)", "")
-	cp default/diskalert.conf $(configDir)/
-endif
-
-config-nginx:
-ifeq ("$(wildcard $(configDir)/nginx-app.conf)", "")
-	cp default/nginx-app.conf $(configDir)/
-endif
-
+config-defaults:
+	cp --update=none default/* $(configDir)/
 
 ###########################################################################
 # Connecting to the server
@@ -232,12 +219,25 @@ certs-unconfigure:
 jail-install:
 	# Make the sample fail2ban jail active.
 	sudo apt install -y fail2ban
+	sudo systemctl enable fail2ban
+	sudo systemctl start fail2ban
+	make jail-configure
+
+jail-configure:
 	sudo ln -s -f $(configDir)/jail.local /etc/fail2ban
-	sudo systemctl restart fail2ban
+	sudo systemctl reload-or-restart fail2ban
 
 jail-unconfigure:
 	sudo systemctl stop fail2ban
 	sudo systemctl disable fail2ban
+	sudo rm /etc/fail2ban/jail.local
+
+jail-status:
+	sudo fail2ban-client status
+	sudo fail2ban-client banned
+
+jail-clear:
+	sudo fail2ban-client unban --all
 
 
 ###########################################################################
@@ -247,7 +247,7 @@ update-start:
 	make https-enable-maintenance https-reload
 
 update-middle:
-	make https-configure
+	make https-configure jail-configure
 
 update-end:
 	make https-disable-maintenance https-enable-redirect80 https-reload

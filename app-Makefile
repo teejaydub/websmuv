@@ -32,6 +32,9 @@ websmuv-update-middle:
 websmuv-update-end:
 	@$(MAKE) --no-print-directory -C websmuv update-end
 
+websmuv-update:
+	@$(MAKE) --no-print-directory -C websmuv update
+
 	
 vm-start:
 	@$(MAKE) --no-print-directory -C websmuv vm-start
