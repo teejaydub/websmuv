@@ -98,6 +98,10 @@ ifneq ("$(hostname)", "$(shell hostname)")
 	sudo hostname --file $(configDir)/hostname.txt
 endif
 
+
+###########################################################################
+# Web server tool
+
 https-install:
 	sudo apt install -y nginx ufw
 
@@ -182,6 +186,9 @@ https-unconfigure: https-stop certs-unconfigure jail-unconfigure
 	sudo ufw deny https
 
 
+###########################################################################
+# TLS certificate tool
+
 certs-install:
 ifneq ("$(hostname)", "localhost")
 	@echo
@@ -216,6 +223,9 @@ certs-unconfigure:
 	-sudo rm /etc/cron.weekly/certbotrenew.sh
 
 
+###########################################################################
+# Brute-force attack monitoring
+
 jail-install:
 	# Make the sample fail2ban jail active.
 	sudo apt install -y fail2ban
@@ -236,6 +246,8 @@ jail-status:
 	sudo fail2ban-client status
 	sudo fail2ban-client banned
 
+# Run this to take all IP addresses out of jail.
+# If you need to fix things in a hurry!
 jail-clear:
 	sudo fail2ban-client unban --all
 

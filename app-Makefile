@@ -43,5 +43,12 @@ vm-state:
 	@$(MAKE) --no-print-directory -C websmuv vm-state
 
 
+jail-status:
+	@$(MAKE) --no-print-directory -C websmuv jail-status
+
+jail-clear:
+	@$(MAKE) --no-print-directory -C websmuv jail-clear
+
+
 confirm:
 	@$(MAKE) --no-print-directory -C websmuv confirm
