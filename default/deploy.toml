@@ -1,0 +1,7 @@
+tld = "example.com"
+hostname = "www.example.com"
+email = "tech@example.com"
+
+[AWS]
+instanceType = "t3.micro"
+instanceID = "i-0123456789abcdef0"

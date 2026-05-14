@@ -1,15 +1,14 @@
 configDir = $(shell pwd)/../conf
+deployFile = $(configDir)/deploy.toml
 
-ifeq ("$(wildcard $(configDir)/hostname.txt)", "")
+hostname = $(shell tomlq .hostname $(deployFile) -r)
+ifeq ("$(hostname)", "")
 hostname = localhost
-else
-hostname = $(shell cat $(configDir)/hostname.txt)
 endif
 
-ifeq ("$(wildcard $(configDir)/tld.txt)", "")
+tld = $(shell tomlq .tld $(deployFile) -r)
+ifeq ("$(tld)", "")
 tld = example.com
-else
-tld = $(shell cat $(configDir)/tld.txt)
 endif
 
 all: depends config
@@ -19,12 +18,12 @@ all: depends config
 # Setup within the dev or server environment.
 
 depends:
-	sudo apt install -y curl toilet
+	sudo apt install -y yq curl toilet
 	# UV, only if not already installed
 	uv --version || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Creates default config files if they don't already exist, in ../config.
-config: config-dir config-pem config-tld config-hostname config-email config-instance config-instance-type config-defaults
+config: config-dir config-pem config-defaults
 
 config-dir:
 	mkdir -p $(configDir)
@@ -35,31 +34,6 @@ ifeq ("$(wildcard $(configDir)/.gitignore)", "")
 endif
 ifneq ("$(wildcard $(configDir)/server.pem)", "")
 	chmod go-rw $(configDir)/server.pem
-endif
-
-config-tld:
-ifeq ("$(wildcard $(configDir)/tld.txt)", "")
-	echo $(tld) > $(configDir)/tld.txt
-endif
-
-config-hostname:
-ifeq ("$(wildcard $(configDir)/hostname.txt)", "")
-	echo $(hostname) > $(configDir)/hostname.txt
-endif
-
-config-email:
-ifeq ("$(wildcard $(configDir)/email.txt)", "")
-	echo service@$(tld) > $(configDir)/email.txt
-endif
-
-config-instance:
-ifeq ("$(wildcard $(configDir)/instance.txt)", "")
-	echo "(i-something)" > $(configDir)/instance.txt
-endif
-
-config-instance-type:
-ifeq ("$(wildcard $(configDir)/instance-type.txt)", "")
-	echo t3.micro > $(configDir)/instance-type.txt
 endif
 
 config-defaults:
@@ -73,7 +47,7 @@ ssh:
 	-ssh ubuntu@$(hostname) -i $(configDir)/server.pem
 	@toilet -f smblock -F border $(shell hostname)
 
-instanceID = $(shell cat $(configDir)/instance.txt)
+instanceID = $(shell tomlq .AWS.instanceID $(deployFile) -r)
 vm-start:
 	@aws ec2 start-instances --instance-ids $(instanceID) --query "StartingInstances[*].CurrentState.Name" --output text
 
@@ -134,8 +108,8 @@ endif
 	sudo mv redirect80.conf /etc/nginx/sites-available/redirect80.conf
 	make https-enable-redirect80
 
-$(configDir)/localhost.pem: $(configDir)/hostname.txt
-	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/O=$(tld)/CN=$(localhost)" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+$(configDir)/localhost.pem: $(configDir)/deploy.yaml
+	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/O=$(tld)/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
 https-enable-maintenance:
 	sudo rm /etc/nginx/sites-enabled/*  # in case hostname has changed

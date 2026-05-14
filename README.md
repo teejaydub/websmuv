@@ -32,13 +32,28 @@ short scripts into one file.
 
 ## How
 
-Designed to be used as a Git submodule to an existing app project - so `..` is the parent app.
+You develop with Make targets in the codebase, and then you deploy using
+different targets in that same Makefile.
 
-Per-project configuration is mostly done with `.txt` files that live in `../conf` (off the parent project).
+Deployment is to one or more specific virtual machines hosted somewhere, which
+are configured initially and kept updated via pulling from Git.
 
-Default config files are provided, and copied to the app conf during install if they don't exist.
+Adapting to varying workflows is done by resizing VMs, or sharing load among a
+finite and named set of VMs. If you have wildly varying loads and want to
+scale up and down dynamically and rapidly, this is probably not the model for
+you.
 
-Config files would be committed to a parent's **private** repository.
+Websmuv is used a Git submodule to an existing app project - so `..` is the
+parent app.
+
+Per-project configuration is mostly done with text and TOML files that live in
+`../conf` (off the parent project).
+
+Default config files are provided, and copied to the app conf during install
+if they don't exist.
+
+Config files would be committed to a parent's **private** repository - though
+currently they don't include (major) secrets.
 
 ## Conventions
 
@@ -72,13 +87,14 @@ make config
 
 Then edit the newly-created files in `../conf`:
 
-* `tld.txt` - the domain name, so that we can redirect WWW requests from example.com to www.example.com.
-* `hostname.txt` - the full subdomain used for hosting this app, e.g. `www.example.com`.
-  This can be the instance's public IP address during testing.
-  It can also be `localhost` for local testing - this will bypass Let's Encrypt and use a self-signed cert instead.
-* `email.txt` - the email address to use for sending alerts and creating certs, e.g. `service@example.com`.
-* `instance.txt` - the instance ID of the EC2 instance used for production, e.g. `i-1234abcdef`. 
-* `instance-type.txt` - the instance type, e.g. `t3.micro`.
+* `deploy.toml` - TOML (looks like INI) for individual settings related to deployment:
+  * `tld` - the top-level domain name, so that we can redirect WWW requests from example.com to www.example.com.
+  * `hostname` - the full subdomain used for hosting this app, e.g. `www.example.com`.
+    This can be the instance's public IP address during testing.
+    It can also be `localhost` for local testing - this will bypass Let's Encrypt and use a self-signed cert instead.
+  * `email` - the email address to use for sending alerts and creating certs, e.g. `tech@example.com`.
+  * `AWS.instanceID` - the instance ID of the EC2 instance used for production, e.g. `i-1234abcdef`. 
+  * `AWS.instanceType` - the instance type, e.g. `t3.micro`.
 * `server.pem` - the credentials for logging into the EC2 instance using SSH; you must create this and it probably shouldn't be committed even to a private repo - especially if shared among multiple projects.
 * `maintenance.html` - the page served during maintenance mode
 * `diskalert.conf` - configuration for sending emails when disk usage rises; set the disks used and their thresholds or use defaults
@@ -96,7 +112,7 @@ Commit and push your changes in the app project.
 
 ## Configure ssh
 
-Once you copy your server's SSH certificate into `conf/server.pem`,
+Once you copy your server's SSH certificate into `conf/server.pem` and set `hostname` in `deploy.toml`,
 you can log into the server from your dev machine with:
 ```
 make ssh
@@ -125,45 +141,50 @@ make depends
 bash  # to update paths
 make install
 ```
-If you do this on your dev machine, then browse to `http://localhost`, you'll normally see the default nginx 
-welcome page, or other static HTML content if you have that on your system (by default, in `/var/www/html`).
+
+If you do this on your dev machine, with `hostname` set to `localhost`, then
+browse to `http://localhost`, you'll normally see the default nginx welcome
+page, or other static HTML content if you have that on your system
+(by default, in `/var/www/html`).
 
 ## Maintenance mode
 
-To put the whole app into maintenance mode, first edit `conf/maintenance.html`.  Then, from the main project:
+To put the whole app into maintenance mode, first edit
+`conf/maintenance.html`.  Then, from the main project directory on the
+server: 
 ```
-make nginx-maintenance
+make https-maintenance
 ```
 
 To go back to normal hosting:
 ```
-make nginx-normal
+make https-normal
 ```
 
 The text for this page is taken from `conf/maintenance.html` from the app project, and exists
 independently from any other HTML hosted by the nginx sever normally.
 
-Edits to `conf/maintenance.html` will take effect when `make nginx-maintenance` is next done in the parent app.
+Edits to `conf/maintenance.html` will take effect when `make https-maintenance` is next done in the parent app.
 
 ## Changing configuration
 
-To change the hostname (e.g. when going to production and a public-facing subdomain),
-do this on the **development machine**:
+To change the configuration, edit the `deploy.toml` file on the **development
+machine**, then commit it.
+
+Then pull those changes to the server:
 ```
+make ssh
 cd myapp
-echo new.example.com > conf/hostname.txt
-git commit...
-```
-Then on the server:
-```
-cd myapp/websmuv
 make update
 ```
-If you have other tasks to do when updating the server, have your project's `make update` target
-call `cd websmuv && make update`, or use `make update-start update-middle update-end` and mix those
-pieces with the rest of your update tasks.
 
-The maintenance mode message will be returned by nginx while the rest of the update is happening.
+If you have other tasks to do when updating the server, e.g. applying database
+migrations in your app, have your project's `make update` target call `cd
+websmuv && make update`, or use `make update-start update-middle update-end`
+and mix those pieces with the rest of your update tasks.
+
+The maintenance mode message will be returned by nginx while the rest of the
+update is happening.
 
 ## Resizing an EC2 instance
 
