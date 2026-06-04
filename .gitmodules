@@ -1,0 +1,3 @@
+[submodule "diskalert"]
+	path = diskalert
+	url = https://github.com/teejaydub/diskalert

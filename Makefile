@@ -59,7 +59,7 @@ vm-state:
 # First-time server-side setup.
 # OK to run again - won't cause harm to existing configuration.
 
-install: depends config https-install certs-install jail-install https-restart set-hostname
+install: depends config https-install certs-install jail-install https-restart set-hostname diskalert-install
 
 confirm:
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} = y ]
@@ -224,6 +224,18 @@ jail-status:
 # If you need to fix things in a hurry!
 jail-clear:
 	sudo fail2ban-client unban --all
+
+
+###########################################################################
+# Disk space monitoring
+
+diskalert-install:
+	chmod 700 $(configDir)/diskalert.conf
+	sudo ln -s -f $(configDir)/diskalert.conf /etc/
+	uv tool install diskalert/
+
+diskalert-run:
+	diskalert
 
 
 ###########################################################################
