@@ -37,7 +37,7 @@ config-defaults:
 	cp --update=none default/* $(configDir)/
 
 ###########################################################################
-# Connecting to the server
+# Connecting to the server VM instance and manipulating it.
 
 ssh:
 	@toilet -t $(hostname) -f smblock -F border
@@ -50,6 +50,17 @@ vm-start:
 
 vm-state:
 	@aws ec2 describe-instances --instance-ids $(instanceID) --query "Reservations[*].Instances[*].State.Name" --output text
+
+# For completeness - could also do this with an AWS command but this is generally faster and more reliable?
+vm-stop:
+	@echo This will shut down the current VM instance.
+	@$(MAKE) confirm
+	ssh -i $(configDir)/server.pem ubuntu@$(hostname) sudo shutdown now
+
+vm-delete:
+	@echo This will delete the current VM instance, and lose any data stored on its root disk.
+	@$(MAKE) confirm
+	@aws ec2 terminate-instances --instance-ids $(instanceID)
 
 
 ###########################################################################

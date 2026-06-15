@@ -42,6 +42,12 @@ vm-start:
 vm-state:
 	@$(MAKE) --no-print-directory -C websmuv vm-state
 
+vm-stop:
+	@$(MAKE) --no-print-directory -C websmuv vm-stop
+
+vm-delete:
+	@$(MAKE) --no-print-directory -C websmuv vm-delete
+
 
 jail-status:
 	@$(MAKE) --no-print-directory -C websmuv jail-status
