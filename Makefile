@@ -232,10 +232,21 @@ jail-clear:
 diskalert-install:
 	chmod 700 $(configDir)/diskalert.conf
 	sudo ln -s -f $(configDir)/diskalert.conf /etc/
+	sudo ln -s -f conf/run-diskalert.sh /etc/cron.hourly
 	uv tool install diskalert/
 
 diskalert-run:
 	diskalert
+
+diskalert-upgrade:
+	uv tool upgrade diskalert/
+
+diskalert-unconfigure:
+	sudo rm -f /etc/diskalert.conf
+	sudo rm -f /etc/cron.hourly/run-diskalert.sh
+
+diskalert-uninstall: diskalert-unconfigure
+	uv tool uninstall diskalert
 
 
 ###########################################################################
@@ -246,6 +257,7 @@ update-start:
 
 update-middle:
 	make https-configure jail-configure
+	make diskalert-upgrade
 
 update-end:
 	make https-disable-maintenance https-enable-redirect80 https-reload
