@@ -1,11 +1,6 @@
 # Generic for HTTPS to the given hostname.
 server {
-    server_name  $tld $hostname;
-
-    # Redirect from example.com to www.example.com.
-    if ($host = $tld) {
-        return 301 https://$hostname$request_uri;
-    }
+    server_name $hostname;
 
     # Use the Let's Encrypt certificates for HTTPS.
     listen 443 ssl;

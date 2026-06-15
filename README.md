@@ -38,6 +38,8 @@ different targets in that same Makefile.
 Deployment is to one or more specific virtual machines hosted somewhere, which
 are configured initially and kept updated via pulling from Git.
 
+Each deployment to a given VM has its own Git branch.
+
 Adapting to varying workflows is done by resizing VMs, or sharing load among a
 finite and named set of VMs. If you have wildly varying loads and want to
 scale up and down dynamically and rapidly, this is probably not the model for
@@ -89,6 +91,8 @@ Then edit the newly-created files in `../conf`:
 
 * `deploy.toml` - TOML (looks like INI) for individual settings related to deployment:
   * `tld` - the top-level domain name, so that we can redirect WWW requests from example.com to www.example.com.
+    If this configuration is for development testing, or if the top-level domain does *not* resolve to this host,
+    leave this blank - it should only be nonblank if DNS will resolve from example.com to this host.
   * `hostname` - the full subdomain used for hosting this app, e.g. `www.example.com`.
     This can be the instance's public IP address during testing.
     It can also be `localhost` for local testing - this will bypass Let's Encrypt and use a self-signed cert instead.
@@ -121,13 +125,13 @@ This works both from the parent project and from the websmuv directory.
 
 ## Deployment
 
-Finish configuring a fresh instance and clone the parent app project into the instance:
+Finish configuring a fresh VM instance and clone the parent app project into the instance:
 ```
 sudo apt update && apt upgrade  # as usual for a fresh instance, may need reboot
 sudo apt install git make
 git clone https://www.github.com/...myapp --recurse-submodules
 ```
-...or if the instance already has the project and you're adding websmuv to it:
+...or if the VM already has the project and you're adding websmuv to it for the first time:
 ```
 cd myapp
 git pull
@@ -169,7 +173,7 @@ Edits to `conf/maintenance.html` will take effect when `make https-maintenance` 
 ## Changing configuration
 
 To change the configuration, edit the `deploy.toml` file on the **development
-machine**, then commit it.
+machine**, then commit it.  Do this in a deployment branch.
 
 Then pull those changes to the server:
 ```

@@ -1,0 +1,15 @@
+
+server {
+    # For https://example.com.
+    server_name $tld;
+
+    # Use the Let's Encrypt certificates for the top-level domain.
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/$tld/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$tld/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/pki/nginx/dhparams.pem;
+
+    # Redirect from example.com to www.example.com.
+    return 301 https://$hostname$request_uri;
+}

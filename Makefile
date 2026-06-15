@@ -7,9 +7,6 @@ hostname = localhost
 endif
 
 tld = $(shell tomlq .tld $(deployFile) -r)
-ifeq ("$(tld)", "")
-tld = example.com
-endif
 
 all: depends config
 
@@ -106,24 +103,36 @@ endif
 	sudo mv maintenance.conf /etc/nginx/sites-available/maintenance.conf
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-redirect80.conf.template > redirect80.conf
 	sudo mv redirect80.conf /etc/nginx/sites-available/redirect80.conf
-	make https-enable-redirect80
+ifneq ("$(tld)", "")
+	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-redirect-tld.conf.template > redirect-tld.conf
+	sudo mv redirect-tld.conf /etc/nginx/sites-available/redirect-tld.conf
+endif
+	make https-enable-redirect
 
 $(configDir)/localhost.pem: $(configDir)/deploy.yaml
-	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/O=$(tld)/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
 https-enable-maintenance:
 	sudo rm /etc/nginx/sites-enabled/*  # in case hostname has changed
 	sudo ln -s -f /etc/nginx/sites-available/maintenance.conf /etc/nginx/sites-enabled/
 	sudo mkdir -p /var/www/html/maintenance
 	sudo cp -f $(configDir)/maintenance.html /var/www/html/maintenance/index.html
+	$(MAKE) https-enable-redirect
 https-disable-maintenance:
 	sudo rm /etc/nginx/sites-enabled/*
 	sudo ln -s -f /etc/nginx/sites-available/$(hostname) /etc/nginx/sites-enabled/
+	$(MAKE) https-enable-redirect
 
-https-enable-redirect80:
+https-enable-redirect:
 	sudo ln -s -f /etc/nginx/sites-available/redirect80.conf /etc/nginx/sites-enabled/
-https-disable-redirect80:
+ifneq ("$(tld)", "")
+	sudo ln -s -f /etc/nginx/sites-available/redirect-tld.conf /etc/nginx/sites-enabled/
+endif
+https-disable-redirect:
 	sudo rm -f /etc/nginx/sites-enabled/redirect80.conf
+ifneq ("$(tld)", "")
+	sudo rm -f /etc/nginx/sites-enabled/redirect-tld.conf
+endif
 
 https-start:
 	sudo systemctl start nginx
@@ -178,9 +187,12 @@ certs-configure:
 ifneq ("$(hostname)", "localhost")
 	make https-stop
 	sudo certbot certonly --debug --standalone -d $(hostname)
-	# Use this script to carefully stop redirecting port 80 while renewing.
+ifneq ("$(tld)", "")
+	sudo certbot certonly --debug --standalone -d $(tld)
+endif
+	# Make the renewal script to stop redirecting port 80 while renewing.
 	# It will restart the redirection when it's done.
-	uv run python -m template hostname=$(hostname) tld=$(tld) pwd=$(shell pwd) < conf/certbotrenew.sh.template > certbotrenew.sh
+	uv run python -m template hostname=$(hostname) pwd=$(shell pwd) < conf/certbotrenew.sh.template > certbotrenew.sh
 	sudo mv -f certbotrenew.sh /etc/cron.weekly
 	make https-start
 	sudo systemctl stop certbot.timer
@@ -189,9 +201,9 @@ endif
 
 # Renews the certificate, if it's time; disables HTTP redirection on port 80 during the process.
 certs-renew: 
-	$(MAKE) https-disable-redirect80
+	$(MAKE) https-disable-redirect
 	-sudo /usr/bin/certbot renew
-	$(MAKE) https-enable-redirect80 https-reload
+	$(MAKE) https-enable-redirect https-reload
 
 certs-unconfigure:
 	-sudo rm /etc/cron.weekly/certbotrenew.sh
@@ -260,7 +272,7 @@ update-middle:
 	make diskalert-upgrade
 
 update-end:
-	make https-disable-maintenance https-enable-redirect80 https-reload
+	make https-disable-maintenance https-enable-redirect https-reload
 	make https-status
 
 update: update-start update-middle update-end
