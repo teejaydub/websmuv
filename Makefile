@@ -201,9 +201,11 @@ endif
 
 # Renews the certificate, if it's time; disables HTTP redirection on port 80 during the process.
 certs-renew: 
+ifneq ("$(hostname)", "localhost")
 	$(MAKE) https-disable-redirect
 	-sudo /usr/bin/certbot renew
 	$(MAKE) https-enable-redirect https-reload
+endif
 
 certs-unconfigure:
 	-sudo rm /etc/cron.weekly/certbotrenew.sh
@@ -265,14 +267,15 @@ diskalert-uninstall: diskalert-unconfigure
 # Updating everything
 
 update-start:
-	make https-enable-maintenance https-reload
+	$(MAKE) https-enable-maintenance https-reload
 
 update-middle:
-	make https-configure jail-configure
-	make diskalert-upgrade
+	$(MAKE) https-configure jail-configure
+	$(MAKE) diskalert-upgrade
+	$(MAKE) certs-renew
 
 update-end:
-	make https-disable-maintenance https-enable-redirect https-reload
-	make https-status
+	$(MAKE) https-disable-maintenance https-enable-redirect https-reload
+	$(MAKE) https-status
 
 update: update-start update-middle update-end
