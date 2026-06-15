@@ -239,7 +239,7 @@ diskalert-run:
 	diskalert
 
 diskalert-upgrade:
-	uv tool upgrade diskalert/
+	uv tool upgrade diskalert
 
 diskalert-unconfigure:
 	sudo rm -f /etc/diskalert.conf
