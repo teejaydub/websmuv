@@ -1,5 +1,14 @@
 
 server {
+    # Redirect from http://example.com to http://www.example.com.
+    # Changing to https while changing the hostname does bad things,
+    # so leave that to the redirect80.conf file.
+    listen 80;
+    server_name $tld;
+    return 301 http://$hostname$request_uri;
+}
+
+server {
     # For https://example.com.
     server_name $tld;
 
