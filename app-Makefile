@@ -45,6 +45,9 @@ vm-state:
 vm-stop:
 	@$(MAKE) --no-print-directory -C websmuv vm-stop
 
+vm-shutdown:
+	@$(MAKE) --no-print-directory -C websmuv vm-shutdown
+
 vm-delete:
 	@$(MAKE) --no-print-directory -C websmuv vm-delete
 

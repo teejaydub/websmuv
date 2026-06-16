@@ -51,10 +51,16 @@ vm-start:
 vm-state:
 	@aws ec2 describe-instances --instance-ids $(instanceID) --query "Reservations[*].Instances[*].State.Name" --output text
 
-# For completeness - could also do this with an AWS command but this is generally faster and more reliable?
+# Shut the VM down via the AWS CLI.
+# Equivalent to vm-shutdown, handier if SSH isn't currently working.
 vm-stop:
 	@echo This will shut down the current VM instance.
 	@$(MAKE) confirm
+	@aws ec2 stop-instances --instance-ids $(instanceID) --query "StoppingInstances[*].CurrentState.Name" --output text
+
+# Shut the VM down by SSH-ing to it and issuing a command.
+# Equivalent to vm-stop, handier if you don't have a current AWS login session.
+vm-shutdown:
 	ssh -i $(configDir)/server.pem ubuntu@$(hostname) sudo shutdown now
 
 vm-delete:
