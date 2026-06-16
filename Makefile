@@ -138,7 +138,7 @@ set-hostname:
 ifneq ("$(hostname)", "$(shell hostname)")
 	@echo "This will change this machine's hostname from $(shell hostname) to $(hostname)."
 	@make confirm
-	sudo hostname --file $(configDir)/hostname.txt
+	sudo hostname $(hostname)
 endif
 
 
