@@ -51,6 +51,18 @@ vm-shutdown:
 vm-delete:
 	@$(MAKE) --no-print-directory -C websmuv vm-delete
 
+vm-clone:
+	@$(MAKE) --no-print-directory -C websmuv vm-clone
+
+vm-replace:
+	@$(MAKE) --no-print-directory -C websmuv vm-replace
+
+vm-patch:
+	@$(MAKE) --no-print-directory -C websmuv vm-patch
+
+vm-reboot:
+	@$(MAKE) --no-print-directory -C websmuv vm-reboot
+
 
 jail-status:
 	@$(MAKE) --no-print-directory -C websmuv jail-status

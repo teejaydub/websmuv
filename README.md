@@ -125,13 +125,22 @@ This works both from the parent project and from the websmuv directory.
 
 ## Deployment
 
-Finish configuring a fresh VM instance and clone the parent app project into the instance:
+Finish bringing a fresh VM instance up to date with `make vm-patch vm-reboot`, 
+or do the equivalent using `make ssh`:
+
 ```
-sudo apt update && apt upgrade  # as usual for a fresh instance, may need reboot
+sudo apt update && apt upgrade  # as usual for a fresh instance, may need reboot afterward
 sudo apt install git make
+```
+
+Clone the parent app project into the instance:
+```
+make ssh
 git clone https://www.github.com/...myapp --recurse-submodules
 ```
-...or if the VM already has the project and you're adding websmuv to it for the first time:
+(and set a GitHub key for deployment usage, or authenticate a different way).
+
+Or, if the VM already has the project and you're adding websmuv to it for the first time:
 ```
 cd myapp
 git pull
@@ -145,11 +154,13 @@ make depends
 bash  # to update paths
 make install
 ```
+(It's nice to build this into a `make install` target in the parent project's Makefile.)
 
 If you do this on your dev machine, with `hostname` set to `localhost`, then
 browse to `http://localhost`, you'll normally see the default nginx welcome
 page, or other static HTML content if you have that on your system
 (by default, in `/var/www/html`).
+
 
 ## Maintenance mode
 
@@ -170,36 +181,38 @@ independently from any other HTML hosted by the nginx sever normally.
 
 Edits to `conf/maintenance.html` will take effect when `make https-maintenance` is next done in the parent app.
 
+
 ## Changing configuration
 
-To change the configuration, edit the `deploy.toml` file on the **development
-machine**, then commit it.  Do this in a deployment branch.
+After changing anything in the `conf` directory, commit it to a deployment branch.
 
 Then pull those changes to the server:
 ```
 make ssh
 cd myapp
-make update
+git checkout test  # if not already on the right branch, change to it
+make websmuv-update
 ```
 
 If you have other tasks to do when updating the server, e.g. applying database
-migrations in your app, have your project's `make update` target call `cd
+migrations in your app, you can integrate this into your own Make targets
+(or other processes).  Have your project's `make update` target call `cd
 websmuv && make update`, or use `make update-start update-middle update-end`
 and mix those pieces with the rest of your update tasks.
 
 The maintenance mode message will be returned by nginx while the rest of the
-update is happening.
+update is happening - between `update-start` and `update-end`.
+
 
 ## Resizing an EC2 instance
 
-To resize the server EC2 instance, do this on the **development machine**:
-```
-cd myapp
-nano conf/ec2-instance-type.txt
-make update-instance-type
-```
+To resize the server EC2 instance, edit `deploy.toml`, 
+change AWS:instanceType to an AWS-recognized type string (e.g. "t3.small"),
+then do `make vm-update-type` on the **development machine**.
+
 The server will be gracefully shut down, resized, restarted, and the services restarted.
-Commit and tag after completion, to document that it was done.
+Commit after completion, to document that it was done.
+
 
 ## Configuring fail2ban
 
@@ -225,3 +238,32 @@ addresses due to excessive requests.  Several files work together to define this
 
 After changing any of these files, run `make websmuv-update` or equivalent as usual.
 
+
+## Making a test VM instance from a production VM
+
+If you want to start a new test deployment without disturbing the production server:
+
+1. `git checkout -b test`
+
+2. Edit the `hostname` in `deploy.html`, e.g. to `test.example.com`.
+
+3. `make vm-clone`.  This will create a new instance based on the properties of the existing one.
+
+3. Copy the new instance ID reported into `config/deploy.toml`.
+
+3. Create an Elastic IP for the new hostname, and set the `hostname` in `deploy.toml`.
+
+4. Follow the commands from the *Deployment* section above.
+
+5. Commit the `deploy.toml` changes back to the test branch.
+
+
+## Making a fresh test VM instance from an existing test instance
+
+If you already have a test instance, and want to rebuild it from scratch:
+
+1. On the deployment branch: `make vm-replace`.
+
+4. Follow the commands from the *Deployment* section above.
+
+5. Commit the `deploy.toml` changes back to the test branch.

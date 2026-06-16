@@ -1,12 +1,12 @@
-configDir = $(shell pwd)/../conf
-deployFile = $(configDir)/deploy.toml
+configDir := $(shell pwd)/../conf
+deployFile := $(configDir)/deploy.toml
 
-hostname = $(shell tomlq .hostname $(deployFile) -r)
+hostname := $(shell tomlq .hostname $(deployFile) -r)
 ifeq ("$(hostname)", "")
 hostname = localhost
 endif
 
-tld = $(shell tomlq .tld $(deployFile) -r)
+tld := $(shell tomlq .tld $(deployFile) -r)
 
 all: depends config
 
@@ -15,7 +15,7 @@ all: depends config
 # Setup within the dev or server environment.
 
 depends:
-	sudo apt install -y yq curl toilet
+	sudo apt install -y yq curl toilet moreutils
 	# UV, only if not already installed
 	uv --version || curl -LsSf https://astral.sh/uv/install.sh | sh
 
@@ -44,7 +44,7 @@ ssh:
 	-ssh ubuntu@$(hostname) -i $(configDir)/server.pem
 	@toilet -f smblock -F border $(shell hostname)
 
-instanceID = $(shell tomlq .AWS.instanceID $(deployFile) -r)
+instanceID := $(shell tomlq .AWS.instanceID $(deployFile) -r)
 vm-start:
 	@aws ec2 start-instances --instance-ids $(instanceID) --query "StartingInstances[*].CurrentState.Name" --output text
 
@@ -68,15 +68,70 @@ vm-delete:
 	@$(MAKE) confirm
 	@aws ec2 terminate-instances --instance-ids $(instanceID)
 
+# Copies the main settings of the current instance to a new instance.
+# If you want to switch to working with the new instance, copy the reported instance ID into deploy.toml.
+# This must print only the instance ID of the new VM in order for vm-replace to work.
+vm-clone:
+	$(shell aws ec2 describe-instances \
+    --instance-ids $(instanceID) \
+    --query "Reservations[*].Instances[*].ImageId" \
+    --output text > imageName.txt)
+	$(shell aws ec2 describe-instances \
+	--instance-ids $(instanceID) \
+	--query "Reservations[*].Instances[*].KeyName" \
+	--output text > keyPair.txt)
+	$(shell aws ec2 describe-instances \
+	--instance-ids $(instanceID) \
+	--query "Reservations[*].Instances[*].SecurityGroups[*].GroupId" \
+	--output text > securityGroup.txt)
+	@aws ec2 run-instances \
+	    --instance-type $(shell tomlq .AWS.instanceType $(deployFile) -r) \
+	    --count 1 \
+	    --image-id $(shell cat imageName.txt) \
+	    --key-name $(shell cat keyPair.txt) \
+	    --security-group-ids $(shell cat securityGroup.txt) \
+	    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=$(hostname)}]' \
+		--query "Instances[0].InstanceId" \
+		--output text
+	-@rm imageName.txt keyPair.txt securityGroup.txt
+
+# Does vm-clone, and also deletes the old instance and assigns its public IP to the new instance.
+vm-replace: 
+	$(shell aws ec2 describe-addresses \
+	--filters "Name=instance-id,Values=$(instanceID)" \
+	--query "Addresses[*].PublicIp" \
+	--output text > publicIP.txt)
+	@$(shell $(MAKE) --no-print-directory vm-clone > newInstanceID.txt)
+	@echo New instance ID: $(shell cat newInstanceID.txt)
+	@tomlq -t '.AWS.instanceID = "$(shell cat newInstanceID.txt)"' $(deployFile) | sponge $(deployFile)
+	@echo Your new instance is created and its instance ID is stored in deploy.toml.  Deleting old instance...
+	@$(MAKE) confirm
+	@aws ec2 terminate-instances --instance-ids $(instanceID)
+	@echo Your old instance is deleted.
+	@aws ec2 associate-address --instance-id $(shell cat newInstanceID.txt) \
+		--public-ip $(shell cat publicIP.txt)
+	@ssh-keygen -f '$(HOME)/.ssh/known_hosts' -R '$(hostname)'
+	@echo Your new instance has been assigned the elastic IP address from the old instance.
+	-@rm publicIP.txt newInstanceID.txt
+
+# Install all pending patches for the VM, and incidentally the ones we initially need.
+vm-patch:
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "sudo apt update && sudo apt upgrade -y && sudo apt install git make -y"
+
+vm-reboot:
+	@echo "Rebooting; it's normal to see a notice that the connection was dropped."
+	ssh -i $(configDir)/server.pem ubuntu@$(hostname) sudo reboot now
+
 
 ###########################################################################
 # First-time server-side setup.
+# Make these targets on the server.
 # OK to run again - won't cause harm to existing configuration.
 
 install: depends config https-install certs-install jail-install https-restart set-hostname diskalert-install
 
 confirm:
-	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} = y ]
+	@echo -n "Are you sure? [y/N] " && read ans && [ "$${ans}" = "y" -o "$${ans}" = "Y" ]
 
 set-hostname:
 	@echo
