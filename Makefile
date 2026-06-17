@@ -1,3 +1,5 @@
+.MAKEFLAGS += --no-print-directory
+
 configDir := $(shell pwd)/../conf
 deployFile := $(configDir)/deploy.toml
 
@@ -101,7 +103,7 @@ vm-replace:
 	--filters "Name=instance-id,Values=$(instanceID)" \
 	--query "Addresses[*].PublicIp" \
 	--output text > publicIP.txt)
-	@$(shell $(MAKE) --no-print-directory vm-clone > newInstanceID.txt)
+	@$(shell $(MAKE) vm-clone > newInstanceID.txt)
 	@echo New instance ID: $(shell cat newInstanceID.txt)
 	@tomlq -t '.AWS.instanceID = "$(shell cat newInstanceID.txt)"' $(deployFile) | sponge $(deployFile)
 	@echo Your new instance is created and its instance ID is stored in deploy.toml.  Deleting old instance...
@@ -163,7 +165,7 @@ https-install:
 	sudo ufw allow http
 	sudo ufw allow https
 
-	@$(MAKE) --no-print-directory /etc/pki/nginx/dhparams.pem
+	@$(MAKE) /etc/pki/nginx/dhparams.pem
 	make https-configure
 
 # Generate unique Diffie-Helman parameters, but only once.
