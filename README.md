@@ -99,6 +99,8 @@ Then edit the newly-created files in `../conf`:
   * `email` - the email address to use for sending alerts and creating certs, e.g. `tech@example.com`.
   * `AWS.instanceID` - the instance ID of the EC2 instance used for production, e.g. `i-1234abcdef`. 
   * `AWS.instanceType` - the instance type, e.g. `t3.micro`.
+  * `AWS.publicIP` - the public IP address of this instance, assumed to be a reassignable Elastic IP
+  * `AWS.prodIP` - the public IP address of the production server, for "blessing" an instance; an Elastic IP
 * `server.pem` - the credentials for logging into the EC2 instance using SSH; you must create this and it probably shouldn't be committed even to a private repo - especially if shared among multiple projects.
 * `maintenance.html` - the page served during maintenance mode
 * `diskalert.conf` - configuration for sending emails when disk usage rises; set the disks used and their thresholds or use defaults

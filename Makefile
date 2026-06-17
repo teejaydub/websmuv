@@ -118,6 +118,7 @@ vm-replace:
 	@echo Your old instance is deleted.
 	@aws ec2 associate-address --instance-id $(shell cat newInstanceID.txt) \
 		--public-ip $(shell cat publicIP.txt)
+	@tomlq -t '.AWS.publicIP = "$(shell cat publicIP.txt)"' $(deployFile) | sponge $(deployFile)
 	@ssh-keygen -f '$(HOME)/.ssh/known_hosts' -R '$(hostname)'
 	@echo Your new instance has been assigned the elastic IP address from the old instance.
 	-@rm publicIP.txt newInstanceID.txt

@@ -5,3 +5,5 @@ email = "tech@example.com"
 [AWS]
 instanceType = "t3.micro"
 instanceID = "i-0123456789abcdef0"
+prodIP = "127.0.0.1"
+publicIP = "127.0.0.1"
