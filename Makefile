@@ -316,6 +316,7 @@ jail-clear:
 # Disk space monitoring
 
 diskalert-install:
+	git submodule update --init
 	chmod 700 $(configDir)/diskalert.conf
 	sudo ln -s -f $(configDir)/diskalert.conf /etc/
 	sudo ln -s -f conf/run-diskalert.sh /etc/cron.hourly
