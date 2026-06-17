@@ -142,7 +142,11 @@ ifneq ("$(hostname)", "localhost")
 ifneq ("$(hostname)", "$(shell hostname)")
 	@echo "This will change this machine's hostname from $(shell hostname) to $(hostname)."
 	@make confirm
-	sudo echo $(hostname) > /etc/hostname
+	sudo hostnamectl set-hostname $(hostname)
+	# Update /etc/hosts to map 127.0.1.1 to the new hostname
+	sudo sed -i 's/127.0.1.1.*/127.0.1.1 $(hostname)/' /etc/hosts
+	# Restart systemd-hostnamed to apply changes
+	sudo systemctl restart systemd-hostnamed
 endif
 endif
 
