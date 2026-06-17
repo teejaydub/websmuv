@@ -148,16 +148,19 @@ endif
 https-install:
 	sudo apt install -y nginx ufw
 
-	sudo ufw enable
+	( sudo ufw status | grep "Status: inactive" ) || sudo ufw enable
+
 	sudo ufw allow ssh
 	sudo ufw allow http
 	sudo ufw allow https
 
-	# Generate unique Diffie-Helman parameters.
+	@$(MAKE) --no-print-directory /etc/pki/nginx/dhparams.pem
+	make https-configure
+
+# Generate unique Diffie-Helman parameters, but only once.
+/etc/pki/nginx/dhparams.pem:
 	sudo mkdir -p /etc/pki/nginx/
 	sudo openssl dhparam -out /etc/pki/nginx/dhparams.pem 2048
-
-	make https-configure
 
 # Create and enable the app site with the current configuration.
 https-configure:
