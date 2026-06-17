@@ -133,12 +133,17 @@ install: depends config https-install certs-install jail-install https-restart s
 confirm:
 	@echo -n "Are you sure? [y/N] " && read ans && [ "$${ans}" = "y" -o "$${ans}" = "Y" ]
 
+# Sets the hostname to match the external hostname.
+# Just a nicety to help keep it clear when you've SSHed into the server vs. still on your dev machine.
+# Confirm because we don't want to do it on a dev machine.
 set-hostname:
 	@echo
+ifneq ("$(hostname)", "localhost")
 ifneq ("$(hostname)", "$(shell hostname)")
 	@echo "This will change this machine's hostname from $(shell hostname) to $(hostname)."
 	@make confirm
-	sudo hostname $(hostname)
+	sudo echo $(hostname) > /etc/hostname
+endif
 endif
 
 
