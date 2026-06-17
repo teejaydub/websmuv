@@ -144,7 +144,7 @@ Or, if the VM already has the project and you're adding websmuv to it for the fi
 ```
 cd myapp
 git pull
-git submodule update --remote --merge --recursive
+git submodule update --init --recursive
 ```
 
 Set up all components on the instance:
