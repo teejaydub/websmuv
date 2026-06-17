@@ -270,9 +270,9 @@ certs-configure:
 	# Stop serving http and https entirely if we're setting up a new cert.
 ifneq ("$(hostname)", "localhost")
 	make https-stop
-	sudo certbot certonly --debug --standalone -d $(hostname)
+	sudo certbot certonly --keep --debug --standalone -d $(hostname)
 ifneq ("$(tld)", "")
-	sudo certbot certonly --debug --standalone -d $(tld)
+	sudo certbot certonly --keep --debug --standalone -d $(tld)
 endif
 	# Make the renewal script to stop redirecting port 80 while renewing.
 	# It will restart the redirection when it's done.
