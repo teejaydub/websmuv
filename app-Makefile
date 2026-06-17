@@ -41,11 +41,17 @@ websmuv-update:
 vm-start:
 	@$(MAKE) -C websmuv vm-start
 	
+vm-wait-started:
+	@$(MAKE) -C websmuv vm-wait-started
+	
 vm-state:
 	@$(MAKE) -C websmuv vm-state
 
 vm-stop:
 	@$(MAKE) -C websmuv vm-stop
+
+vm-wait-stopped:
+	@$(MAKE) -C websmuv vm-wait-stopped
 
 vm-shutdown:
 	@$(MAKE) -C websmuv vm-shutdown
@@ -64,6 +70,9 @@ vm-patch:
 
 vm-reboot:
 	@$(MAKE) -C websmuv vm-reboot
+
+vm-resize:
+	@$(MAKE) -C websmuv vm-resize
 
 
 jail-status:

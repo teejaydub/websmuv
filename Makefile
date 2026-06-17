@@ -50,6 +50,9 @@ instanceID := $(shell tomlq .AWS.instanceID $(deployFile) -r)
 vm-start:
 	@aws ec2 start-instances --instance-ids $(instanceID) --query "StartingInstances[*].CurrentState.Name" --output text
 
+vm-wait-started:
+	aws ec2 wait instance-running --instance-id $(instanceID)
+
 vm-state:
 	@aws ec2 describe-instances --instance-ids $(instanceID) --query "Reservations[*].Instances[*].State.Name" --output text
 
@@ -59,6 +62,9 @@ vm-stop:
 	@echo This will shut down the current VM instance.
 	@$(MAKE) confirm
 	@aws ec2 stop-instances --instance-ids $(instanceID) --query "StoppingInstances[*].CurrentState.Name" --output text
+
+vm-wait-stopped:
+	aws ec2 wait instance-stopped --instance-id $(instanceID)
 
 # Shut the VM down by SSH-ing to it and issuing a command.
 # Equivalent to vm-stop, handier if you don't have a current AWS login session.
@@ -123,6 +129,12 @@ vm-patch:
 vm-reboot:
 	@echo "Rebooting; it's normal to see a notice that the connection was dropped."
 	ssh -i $(configDir)/server.pem ubuntu@$(hostname) sudo reboot now
+
+# Changes the instance's type to what's specified in deploy.toml in AWS.instanceType.
+# Needs to stop and reboot it, so maintenance mode is irrelevant.
+vm-resize: vm-stop vm-wait-stopped
+	aws ec2 modify-instance-attribute --instance-id $(instanceID) --instance-type $(instanceType)
+	$(MAKE) vm-start
 
 
 ###########################################################################

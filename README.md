@@ -207,8 +207,8 @@ update is happening - between `update-start` and `update-end`.
 ## Resizing an EC2 instance
 
 To resize the server EC2 instance, edit `deploy.toml`, 
-change AWS:instanceType to an AWS-recognized type string (e.g. "t3.small"),
-then do `make vm-update-type` on the **development machine**.
+change `AWS.instanceType` to an AWS-recognized type string (e.g. "t3.small"),
+then do `make vm-resize` on the **development machine**.
 
 The server will be gracefully shut down, resized, restarted, and the services restarted.
 Commit after completion, to document that it was done.
