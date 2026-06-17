@@ -8,10 +8,10 @@ https-stop:
 	@$(MAKE) --no-print-directory -C websmuv https-stop
 
 https-maintenance:
-	@$(MAKE) --no-print-directory -C websmuv https-configure https-enable-maintenance https-disable-redirect80 https-reload https-status
+	@$(MAKE) --no-print-directory -C websmuv https-configure https-enable-maintenance https-disable-redirect https-reload https-status
 
 https-normal:
-	@$(MAKE) --no-print-directory -C websmuv https-configure https-disable-maintenance https-enable-redirect80 https-reload https-status
+	@$(MAKE) --no-print-directory -C websmuv https-configure https-disable-maintenance https-enable-redirect https-reload https-status
 
 https-reload:
 	@$(MAKE) --no-print-directory -C websmuv https-reload
