@@ -74,6 +74,15 @@ vm-reboot:
 vm-resize:
 	@$(MAKE) -C websmuv vm-resize
 
+vm-bless:
+	@$(MAKE) -C websmuv vm-bless
+
+vm-curse:
+	@$(MAKE) -C websmuv vm-curse
+
+vm-rename:
+	@$(MAKE) -C websmuv vm-rename
+
 
 jail-status:
 	@$(MAKE) -C websmuv jail-status
