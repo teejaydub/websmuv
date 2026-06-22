@@ -141,7 +141,7 @@ vm-resize: vm-stop vm-wait-stopped
 vm-bless:
 	@aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.prodIP' $(deployFile) -r)
-	@tomlq -t '.AWS.publicIP = .AWS.prodIP' | sponge $(deployFile)
+	@tomlq -t '.AWS.publicIP = .AWS.prodIP'  $(deployFile) | sponge $(deployFile)
 
 # Reset this instance to its instance-specific public IP address,
 # which is presumably different from the production IP.
