@@ -387,9 +387,9 @@ update-start:
 	$(MAKE) https-enable-maintenance https-reload
 
 update-middle:
+	$(MAKE) certs-configure
 	$(MAKE) https-configure jail-configure
 	$(MAKE) diskalert-upgrade
-	$(MAKE) certs-renew
 
 update-end:
 	$(MAKE) https-disable-maintenance https-enable-redirect https-reload
