@@ -139,20 +139,20 @@ vm-resize: vm-stop vm-wait-stopped
 
 # Assign the production IP address to this instance.
 vm-bless:
-	@aws ec2 associate-address --instance-id $(instanceID) \
+	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.prodIP' $(deployFile) -r)
-	@tomlq -t '.AWS.publicIP = .AWS.prodIP'  $(deployFile) | sponge $(deployFile)
-	@ssh-keygen -f '/home/tw/.ssh/known_hosts' -R $(hostname)
+	tomlq -t '.AWS.publicIP = .AWS.prodIP'  $(deployFile) | sponge $(deployFile)
+	ssh-keygen -f '/home/tw/.ssh/known_hosts' -R $(hostname)
 
 # Reset this instance to its instance-specific public IP address,
 # which is presumably different from the production IP.
 vm-curse:
-	@aws ec2 associate-address --instance-id $(instanceID) \
+	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.publicIP' $(deployFile) -r)
 
 # Names this instance after its hostname, primarily to make it easy to see in the AWS console.
 vm-rename:
-	@aws ec2 create-tags --resources $(instanceID) --tags "Key=Name,Value=$(hostname)"
+	aws ec2 create-tags --resources $(instanceID) --tags "Key=Name,Value=$(hostname)"
 
 
 ###########################################################################

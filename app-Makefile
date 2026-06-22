@@ -1,95 +1,93 @@
-.MAKEFLAGS += --no-print-directory
-
 ssh:
-	@$(MAKE) -C websmuv ssh
+	@$(MAKE) --no-print-directory -C websmuv ssh
 
 https-start:
-	@$(MAKE) -C websmuv https-start
+	@$(MAKE) --no-print-directory -C websmuv https-start
 
 https-stop:
-	@$(MAKE) -C websmuv https-stop
+	@$(MAKE) --no-print-directory -C websmuv https-stop
 
 https-maintenance:
-	@$(MAKE) -C websmuv https-configure https-enable-maintenance https-disable-redirect https-reload https-status
+	@$(MAKE) --no-print-directory -C websmuv https-configure https-enable-maintenance https-disable-redirect https-reload https-status
 
 https-normal:
-	@$(MAKE) -C websmuv https-configure https-disable-maintenance https-enable-redirect https-reload https-status
+	@$(MAKE) --no-print-directory -C websmuv https-configure https-disable-maintenance https-enable-redirect https-reload https-status
 
 https-reload:
-	@$(MAKE) -C websmuv https-reload
+	@$(MAKE) --no-print-directory -C websmuv https-reload
 
 https-follow-log:
-	@$(MAKE) -C websmuv https-follow-log
+	@$(MAKE) --no-print-directory -C websmuv https-follow-log
 
 https-log:
-	@$(MAKE) -C websmuv https-log
+	@$(MAKE) --no-print-directory -C websmuv https-log
 
 
 websmuv-update-start:
-	@$(MAKE) -C websmuv update-start
+	@$(MAKE) --no-print-directory -C websmuv update-start
 
 websmuv-update-middle:
-	@$(MAKE) -C websmuv update-middle
+	@$(MAKE) --no-print-directory -C websmuv update-middle
 
 websmuv-update-end:
-	@$(MAKE) -C websmuv update-end
+	@$(MAKE) --no-print-directory -C websmuv update-end
 
 websmuv-update:
-	@$(MAKE) -C websmuv update
+	@$(MAKE) --no-print-directory -C websmuv update
 
 	
 vm-start:
-	@$(MAKE) -C websmuv vm-start
+	@$(MAKE) --no-print-directory -C websmuv vm-start
 	
 vm-wait-started:
-	@$(MAKE) -C websmuv vm-wait-started
+	@$(MAKE) --no-print-directory -C websmuv vm-wait-started
 	
 vm-state:
-	@$(MAKE) -C websmuv vm-state
+	@$(MAKE) --no-print-directory -C websmuv vm-state
 
 vm-stop:
-	@$(MAKE) -C websmuv vm-stop
+	@$(MAKE) --no-print-directory -C websmuv vm-stop
 
 vm-wait-stopped:
-	@$(MAKE) -C websmuv vm-wait-stopped
+	@$(MAKE) --no-print-directory -C websmuv vm-wait-stopped
 
 vm-shutdown:
-	@$(MAKE) -C websmuv vm-shutdown
+	@$(MAKE) --no-print-directory -C websmuv vm-shutdown
 
 vm-delete:
-	@$(MAKE) -C websmuv vm-delete
+	@$(MAKE) --no-print-directory -C websmuv vm-delete
 
 vm-clone:
-	@$(MAKE) -C websmuv vm-clone
+	@$(MAKE) --no-print-directory -C websmuv vm-clone
 
 vm-replace:
-	@$(MAKE) -C websmuv vm-replace
+	@$(MAKE) --no-print-directory -C websmuv vm-replace
 
 vm-patch:
-	@$(MAKE) -C websmuv vm-patch
+	@$(MAKE) --no-print-directory -C websmuv vm-patch
 
 vm-reboot:
-	@$(MAKE) -C websmuv vm-reboot
+	@$(MAKE) --no-print-directory -C websmuv vm-reboot
 
 vm-resize:
-	@$(MAKE) -C websmuv vm-resize
+	@$(MAKE) --no-print-directory -C websmuv vm-resize
 
 vm-bless:
-	@$(MAKE) -C websmuv vm-bless
+	@$(MAKE) --no-print-directory -C websmuv vm-bless
 
 vm-curse:
-	@$(MAKE) -C websmuv vm-curse
+	@$(MAKE) --no-print-directory -C websmuv vm-curse
 
 vm-rename:
-	@$(MAKE) -C websmuv vm-rename
+	@$(MAKE) --no-print-directory -C websmuv vm-rename
 
 
 jail-status:
-	@$(MAKE) -C websmuv jail-status
+	@$(MAKE) --no-print-directory -C websmuv jail-status
 
 jail-clear:
-	@$(MAKE) -C websmuv jail-clear
+	@$(MAKE) --no-print-directory -C websmuv jail-clear
 
 
 confirm:
-	@$(MAKE) -C websmuv confirm
+	@$(MAKE) --no-print-directory -C websmuv confirm
