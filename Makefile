@@ -211,11 +211,12 @@ https-configure:
 ifeq ("$(hostname)", "localhost")
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-localhost.conf.template > nginx.conf
 	make $(configDir)/localhost.pem
+	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-localhost-maintenance.conf.template > maintenance.conf
 else
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx.conf.template > nginx.conf
+	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-maintenance.conf.template > maintenance.conf
 endif
 	sudo mv nginx.conf /etc/nginx/sites-available/$(hostname)
-	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-maintenance.conf.template > maintenance.conf
 	sudo mv maintenance.conf /etc/nginx/sites-available/maintenance.conf
 	uv run python -m template hostname=$(hostname) tld=$(tld) configDir=$(configDir) < conf/nginx-redirect80.conf.template > redirect80.conf
 	sudo mv redirect80.conf /etc/nginx/sites-available/redirect80.conf
@@ -225,7 +226,7 @@ ifneq ("$(tld)", "")
 endif
 	make https-enable-redirect
 
-$(configDir)/localhost.pem: $(configDir)/deploy.yaml
+$(configDir)/localhost.pem: $(configDir)/deploy.toml
 	openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout $(configDir)/localhost-key.pem -out $(configDir)/localhost.pem -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
 https-enable-maintenance:
