@@ -125,6 +125,8 @@ make ssh
 ```
 This works both from the parent project and from the websmuv directory.
 
+It will also `cd` into your project directory, if it exists.
+
 ## Deployment
 
 Finish bringing a fresh VM instance up to date with `make vm-patch vm-reboot`, 
@@ -191,7 +193,6 @@ After changing anything in the `conf` directory, commit it to a deployment branc
 Then pull those changes to the server:
 ```
 make ssh
-cd myapp
 git checkout test  # if not already on the right branch, change to it
 make websmuv-update
 ```

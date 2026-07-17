@@ -1,6 +1,10 @@
 .MAKEFLAGS += --no-print-directory
 
-configDir := $(shell pwd)/../conf
+pwd := $(shell pwd)
+projectPath := $(shell dirname $(pwd))
+project := $(shell basename $(projectPath))
+
+configDir := $(projectPath)/conf
 deployFile := $(configDir)/deploy.toml
 
 hostname := $(shell tomlq .hostname $(deployFile) -r)
@@ -43,7 +47,7 @@ config-defaults:
 
 ssh:
 	@toilet -t $(hostname) -f smblock -F border
-	-ssh ubuntu@$(hostname) -i $(configDir)/server.pem
+	-ssh -t ubuntu@$(hostname) -i $(configDir)/server.pem "cd $(project); exec bash --login"
 	@toilet -f smblock -F border $(shell hostname)
 
 instanceID := $(shell tomlq .AWS.instanceID $(deployFile) -r)
@@ -144,7 +148,7 @@ vm-bless:
 	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.prodIP' $(deployFile) -r)
 	tomlq -t '.AWS.publicIP = .AWS.prodIP'  $(deployFile) | sponge $(deployFile)
-	ssh-keygen -f '/home/tw/.ssh/known_hosts' -R $(hostname)
+	ssh-keygen -f '$(HOME)/.ssh/known_hosts' -R $(hostname)
 
 # Reset this instance to its instance-specific public IP address,
 # which is presumably different from the production IP.
