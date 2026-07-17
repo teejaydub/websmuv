@@ -138,6 +138,8 @@ vm-resize: vm-stop vm-wait-stopped
 	$(MAKE) vm-start
 
 # Assign the production IP address to this instance.
+# Note in deploy.toml that the public IP has changed to the production IP.
+# Notify SSH that its cached data for this hostname is invalid.
 vm-bless:
 	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.prodIP' $(deployFile) -r)
@@ -146,6 +148,7 @@ vm-bless:
 
 # Reset this instance to its instance-specific public IP address,
 # which is presumably different from the production IP.
+# (This is not normally used to back out changes, because you would also need to )
 vm-curse:
 	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.publicIP' $(deployFile) -r)
