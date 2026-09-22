@@ -1,12 +1,14 @@
 # Django targets to share among websmuv projects.
 
-# Links the websmuv-provided Django modules where Python can find them.
+# Links the websmuv-provided Django modules where Python can find them, only if needed.
 deployFile := conf/deploy.toml
 djangoProject := $(shell tomlq .Django.project $(deployFile) -r)
 djangoApp := $(shell tomlq .Django.mainApp $(deployFile) -r)
 djangoMainDir := $(djangoProject)/$(djangoApp)
-django-settings: 
-	-ln -s $(shell pwd)/websmuv/django_settings.py $(djangoMainDir)/django_settings.py
+
+django-settings: $(djangoMainDir)/django_settings.py
+$(djangoMainDir)/django_settings.py:
+	ln -s $(shell pwd)/websmuv/django_settings.py $(djangoMainDir)/django_settings.py
 
 
 #############################################################################
@@ -26,3 +28,21 @@ reinstall-python:
 	uv self update
 	uv python install --reinstall
 	uv sync --reinstall
+
+
+#######################################################################
+# Server-side management.
+
+
+# Used to provide settings.DEPLOY_DATE for use in templates.
+deploy-date:
+	date -Iminutes > deploy-date.txt
+
+# Copies all static files provided by apps into a single hierarchy for hosting by a local web server.
+collectstatic: django-settings
+	mkdir -p $(djangoProject)/static/
+	cd $(djangoProject) && uv run manage.py collectstatic --noinput
+
+# If you've added migrations, this applies them to the database.
+migrate: django-settings
+	cd $(djangoProject) && uv run manage.py migrate
