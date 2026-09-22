@@ -25,4 +25,4 @@ django-depends:
 reinstall-python:
 	uv self update
 	uv python install --reinstall
-	uv sync --upgrade --reinstall
+	uv sync --reinstall
