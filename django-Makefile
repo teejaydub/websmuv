@@ -12,7 +12,7 @@ $(djangoMainDir)/django_settings.py:
 
 
 #############################################################################
-# Initial setup and tools for keeping code up to date
+# Initial setup and tools for keeping code up to date.
 
 # Some of these may no longer be needed, but they're cheap:
 django-depends:
@@ -29,15 +29,6 @@ reinstall-python:
 	uv python install --reinstall
 	uv sync --reinstall
 
-
-#######################################################################
-# Server-side management.
-
-
-# Used to provide settings.DEPLOY_DATE for use in templates.
-deploy-date:
-	date -Iminutes > deploy-date.txt
-
 # Copies all static files provided by apps into a single hierarchy for hosting by a local web server.
 collectstatic: django-settings
 	mkdir -p $(djangoProject)/static/
@@ -46,3 +37,65 @@ collectstatic: django-settings
 # If you've added migrations, this applies them to the database.
 migrate: django-settings
 	cd $(djangoProject) && uv run manage.py migrate
+
+
+#######################################################################
+# Testing and development tools
+
+# Runs the local server, with automatic reload for easy development.
+run:
+	cd $(djangoProject) && DEBUG=1 uv run manage.py runserver
+
+# Runs with debugging turned off - useful for testing production logging.
+prod-run:
+	cd $(djangoProject) && uv run manage.py runserver
+
+# Allows pdb debugging at breakpoint()s.
+debug-run:
+	# Enter 'c' to start the program running.
+	cd $(djangoProject) && DEBUG=1 uv run -m pdb manage.py runserver
+
+# Runs the local server with all DEBUG log messages sent to the console.
+debug-log-run:
+	export DJANGO_LOG_LEVEL=DEBUG && cd $(djangoProject) && DEBUG=1 uv run manage.py runserver
+
+# Runs all unit tests, with warnings on.
+test:
+	uvx ruff format
+	cd $(djangoProject) && uv run python -Wa manage.py test --keepdb --failfast --pdb
+	uvx ruff check
+
+# Runs all unit tests, and tests migrations by rebuilding the test database.
+test-migrations:
+	cd $(djangoProject) && uv run python -Wa manage.py test --failfast --noinput
+
+# Send a test email to the deployment's configured email address.
+test-mail:
+	cd $(djangoProject) && uv run python manage.py sendtestemail $(shell tomlq .email $(deployFile) -r)
+	
+# Update the environment with new modules or schema updates.
+update-dev:
+	uv sync --dev
+	make collectstatic
+	make migrate
+
+# Update the environment for running as a server.
+# You should probably be running update-server, but it's here for comparison with update-dev.
+update-run:
+	uv sync --no-dev
+	make collectstatic
+	make migrate
+
+# Upgrade all packages to their latest available versions.
+upgrade:
+	uv self update
+	uv sync --upgrade --dev
+	git submodule update --recursive
+
+
+#######################################################################
+# Server-side management.
+
+# Used to provide settings.DEPLOY_DATE for use in templates.
+deploy-date:
+	date -Iminutes > deploy-date.txt
