@@ -21,6 +21,7 @@ Features provided:
 * Test connectivity before deployment.
 * Quick redeployment if you're switching from an existing VM to a new one.
 * Quick and reliable VM resizing.
+* Support for Django sites and databases.
 
 The general philosophy is that all configuration should be easy to find in a
 central location, documented, and common across different apps, and the best
@@ -115,6 +116,10 @@ and make sure your app's Makefile includes `make start` and `make stop`.
 See `app-Makefile` for other useful make targets that can be done from the app directory.
 
 Commit and push your changes in the app project.
+
+## Django projects
+
+See `Django.md` for Django-specific features and how to enable and configure them.
 
 ## Configure ssh
 
@@ -248,7 +253,7 @@ If you want to start a new test deployment without disturbing the production ser
 
 1. `git checkout -b test`
 
-2. Edit the `hostname` in `deploy.html`, e.g. to `test.example.com`.
+2. Edit the `hostname` in `deploy.toml`, e.g. to `test.example.com`.
 
 3. `make vm-clone`.  This will create a new instance based on the properties of the existing one.
 
