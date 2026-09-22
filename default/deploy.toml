@@ -9,7 +9,8 @@ prodIP = "127.0.0.1"
 publicIP = "127.0.0.1"
 
 [Django]
-project = "myapp/myapp"
+project = "myapp"
+mainApp = "myapp"
 
 [DB]
 dbhost = "localhost"

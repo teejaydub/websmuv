@@ -1,0 +1,28 @@
+# Django targets to share among websmuv projects.
+
+# Links the websmuv-provided Django modules where Python can find them.
+deployFile := conf/deploy.toml
+djangoProject := $(shell tomlq .Django.project $(deployFile) -r)
+djangoApp := $(shell tomlq .Django.mainApp $(deployFile) -r)
+djangoMainDir := $(djangoProject)/$(djangoApp)
+django-settings: 
+	-ln -s $(shell pwd)/websmuv/django_settings.py $(djangoMainDir)/django_settings.py
+
+
+#############################################################################
+# Initial setup and tools for keeping code up to date
+
+# Some of these may no longer be needed, but they're cheap:
+django-depends:
+	sudo apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+	sudo apt install -y graphviz libpq-dev postgresql postgresql-contrib
+	sudo apt install -y wget
+
+# Replace the current referenced version of Python.
+# Rebuild the environment from scratch.
+# Run this after changing the Python version spec in pyproject.toml.
+# Then also run update-dev if this is a development install.
+reinstall-python:
+	uv self update
+	uv python install --reinstall
+	uv sync --upgrade --reinstall

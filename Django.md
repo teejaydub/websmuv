@@ -6,7 +6,8 @@ Websmuv has a Django integration.
 `
 To use the Django features, add these settings to your `deploy.toml` file:
 
-  * `Django.project` - The directory name of the Django main "app" project, often doubled like `myapp/myapp`.
+  * `Django.project` - The directory name of the Django main project.
+  * `Django.mainApp` - The directory name of the Django app that contains settings, etc.  Under the project directory.
   * `DB.dbhost` - The hostname of the Postgres database to use.
   * `DB.sqlite` - if `true`, Django will use a local SQL database in `django.db` rather than Postgres.
 
