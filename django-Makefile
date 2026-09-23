@@ -24,7 +24,7 @@ $(djangoMainDir)/django_settings.py:
 django-depends:
 	sudo apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 	sudo apt install -y graphviz libpq-dev postgresql postgresql-contrib
-	sudo apt install -y wget
+	sudo apt install -y wget xdg-utils
 
 # Replace the current referenced version of Python.
 # Rebuild the environment from scratch.
@@ -64,6 +64,15 @@ debug-run:
 # Runs the local server with all DEBUG log messages sent to the console.
 debug-log-run:
 	export DJANGO_LOG_LEVEL=DEBUG && cd $(djangoProject) && DEBUG=1 uv run manage.py runserver
+
+# Opens a browser to the local server to view the site from e.g. `make run`.
+# Under WSL, you'll need to do something like this in .bashrc:
+# open_url() {
+#   powershell.exe -Command "Start-Process '$1'"
+# }
+# export BROWSER=open_url
+browse:
+	xdg-open http://localhost:8000
 
 # Runs all unit tests, with warnings on.
 # Also reformats and checks structure.
