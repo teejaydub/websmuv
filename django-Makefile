@@ -10,6 +10,7 @@ deployFile := conf/deploy.toml
 djangoProject := $(shell tomlq .Django.project $(deployFile) -r)
 djangoApp := $(shell tomlq .Django.mainApp $(deployFile) -r)
 djangoMainDir := $(djangoProject)/$(djangoApp)
+dbhost := $(shell tomlq .DB.dbhost conf/deploy.toml -r)
 sqliteFile := $(shell tomlq .DB.sqliteFile conf/deploy.toml -r)
 
 django-settings: $(djangoMainDir)/django_settings.py
@@ -132,11 +133,12 @@ shell:
 
 # Initial setup for using Postgres as the database backend.
 # Create the Postgres user and database for Django.
+# (Don't set the host if it's localhost, because that will prevent setting password properly.)
 create-database-pg:
-	@echo "Unlabeled password prompts below will be for the Postgres user password."
-	createuser -h $(shell cat dbhost.txt) -U postgres -l -d -P $(shell tomlq .DB.dbUser conf/deploy.toml -r)
-	@echo "Unlabeled password prompts below will be for the Postgres user."
-	createdb -h $(shell cat dbhost.txt) -U $(shell tomlq .DB.dbUser conf/deploy.toml -r) -O $(shell tomlq .DB.dbUser conf/deploy.toml -r) $(shell tomlq .DB.dbName conf/deploy.toml -r)
+	@echo "Unlabeled password prompts below will be for the new Postgres user password."
+	createuser -h $(dbhost) -U postgres -l -d -P $(shell tomlq .DB.dbUser conf/deploy.toml -r)
+	@echo "Unlabeled password prompts below will be for the new Postgres user password."
+	createdb -h $(dbhost) -U $(shell tomlq .DB.dbUser conf/deploy.toml -r) -O $(shell tomlq .DB.dbUser conf/deploy.toml -r) $(shell tomlq .DB.dbName conf/deploy.toml -r)
 
 # Whatever database, we're using, finish first-time setup from the Django side.
 setup-database: django-settings
@@ -182,7 +184,7 @@ sync-to-sqlite:
 # Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
 sync-to-pg:
 	@echo
-	@echo "This will replace ALL CONTENTS of the configured Postgres database, $(shell tomlq .dbhost conf/deploy.toml -r):$(shell tomlq .dbName conf/deploy.toml -r)."
+	@echo "This will replace ALL CONTENTS of the configured Postgres database, $(dbhost):$(shell tomlq .dbName conf/deploy.toml -r)."
 	@make confirm
 	cd $(djangoProject) && uv run manage.py flush --database=pg
 	cd $(djangoProject) && uv run manage.py migrate --database=pg
@@ -228,6 +230,56 @@ db-move-pg-to-sqlite:
 #######################################################################
 # Server-side management.
 
+# All the one-time setup for production use: Nginx, firewall, Fail2Ban, Certbot, etc.
+# Requires conf/deploy.toml, as described in `websmuv/README.md`.
+setup-prod:
+	cd websmuv && make install
+	chmod 755 ~  # Allows nginx to host files within ~/project/app/static
+
+# Update all the code on the server, and cycle the running server down and back up again to activate it.
+update-server:
+	uv self update
+	git pull --recurse-submodules
+	make build-server
+
 # Used to provide settings.DEPLOY_DATE for use in templates.
 deploy-date:
 	date -Iminutes > deploy-date.txt
+
+# Rebuild the deployment, with a new date, and ensure everything's up to date.
+# Recover after a bad update-server by "git checkout <previous tag name>", then running this.
+build-server: django-settings
+	make websmuv-update-start
+	make deploy-date
+	-make stop
+	make update-run
+	make gunicorn-asgi
+	make gunicorn-install
+	make websmuv-update-middle
+	make restart
+	make websmuv-update-end
+	make server-status
+
+start:
+	sudo systemctl start gunicorn.socket
+	sudo systemctl enable gunicorn.socket
+
+stop:
+	-sudo systemctl stop gunicorn.socket
+	-sudo systemctl stop gunicorn
+
+restart:
+	sudo systemctl daemon-reload
+	sudo systemctl reload-or-restart gunicorn
+
+server-status:
+	sudo systemctl status gunicorn --no-pager
+
+log:
+	sudo journalctl -u gunicorn -r
+
+last-log:
+	sudo journalctl -u gunicorn -S yesterday
+
+follow-log:
+	sudo journalctl -f -u gunicorn -n 1000

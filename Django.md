@@ -28,12 +28,12 @@ You'll also need to include the Django-specific features in your project's Makef
 
 * Add `include websmuv/django-Makefile` to the top of your app's Makefile.
 * Add `from .django_settings import *` to the top of your app's main `settings.py`.
-* Remove the `DATABASES` setting from your existing settings, or further customize the provided settings.
+* Remove the `DATABASES` setting from your existing Django app settings, or further customize the provided settings.
 * Add `django_settings.py` to your project's .gitignore file.  That file is soft-linked; it's weird, but saves other fuss.
 
 ## Django settings
 
-These settings are provided:
+These settings are provided by websmuv:
 
 * `DATABASES` is configured to follow the `DB` settings in `deploy.toml`.
 * `RELEASE_VERSION`, `DEPLOY_DATE`, and `DB_ENGINE_DISPLAY` are defined and exported for use in templates, via e.g. `{{ settings.RELEASE_VERSION }}`.
@@ -49,5 +49,3 @@ Usage patterns include:
 * Running SQLite efficiently in production, which is more performant and cheaper for small volume
 * Running SQLite in production but using an external Postgres server (e.g. AWS Aurora) to ease migration between servers
 * Migrating to Aurora (or other Postgres installation) only when needed, with minimal effort.
-
-
