@@ -47,9 +47,9 @@ if DEPLOY_DATE:
 DATABASES = {
     'pg': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'django-mpi',
-        'USER': 'django-mpi',
-        'PASSWORD': 'dev-mpi',
+        'NAME': DEPLOY_DB.get('dbName', 'django'),
+        'USER': DEPLOY_DB.get('dbName', 'django'),
+        'PASSWORD': DEPLOY_DB.get('dbPassword'),
         'CONN_MAX_AGE': 60,
         'CONN_HEALTH_CHECKS': True,
         'HOST': DEPLOY_DB.get('dbhost', '127.0.0.1'),
@@ -57,7 +57,7 @@ DATABASES = {
     },
     'sqlite': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(PROJECT_DIR, 'django.db'),
+        'NAME': os.path.join(PROJECT_DIR, DEPLOY_DB.get('sqliteFile', 'django.db')),
         'OPTIONS': {
             "init_command": "PRAGMA synchronous=1; PRAGMA cache_size=2000; PRAGMA journal_mode=WAL;",
             "transaction_mode": "IMMEDIATE",

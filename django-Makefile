@@ -1,11 +1,16 @@
 # Django targets to share among websmuv projects.
 .MAKEFLAGS += --no-print-directory
 
+pwd := $(shell pwd)
+projectPath := $(shell dirname $(pwd))
+project := $(shell basename $(projectPath))
+
 # Links the websmuv-provided Django modules where Python can find them, only if needed.
 deployFile := conf/deploy.toml
 djangoProject := $(shell tomlq .Django.project $(deployFile) -r)
 djangoApp := $(shell tomlq .Django.mainApp $(deployFile) -r)
 djangoMainDir := $(djangoProject)/$(djangoApp)
+sqliteFile := $(shell tomlq .DB.sqliteFile conf/deploy.toml -r)
 
 django-settings: $(djangoMainDir)/django_settings.py
 $(djangoMainDir)/django_settings.py:
@@ -111,6 +116,104 @@ model-viz:
 # Requires django-extensions.
 shell:
 	cd $(djangoProject) && DEBUG=1 uv run manage.py shell_plus
+
+
+#############################################################################
+# Database management, particularly for managing Postgres vs. SQLite support.
+
+# Initial setup for using Postgres as the database backend.
+# Create the Postgres user and database for Django.
+create-database-pg:
+	@echo "Unlabeled password prompts below will be for the Postgres user password."
+	createuser -h $(shell cat dbhost.txt) -U postgres -l -d -P $(shell tomlq .DB.dbUser conf/deploy.toml -r)
+	@echo "Unlabeled password prompts below will be for the Postgres user."
+	createdb -h $(shell cat dbhost.txt) -U $(shell tomlq .DB.dbUser conf/deploy.toml -r) -O $(shell tomlq .DB.dbUser conf/deploy.toml -r) $(shell tomlq .DB.dbName conf/deploy.toml -r)
+
+# Whatever database, we're using, finish first-time setup from the Django side.
+setup-database: django-settings
+	make collectstatic migrate
+	cd $(djangoProject) && uv run manage.py createsuperuser
+
+# View the current database via SQL commands in the current database engine.
+sql:
+	cd $(djangoProject) && DEBUG=1 uv run manage.py dbshell
+
+# View the SQLite database.
+sql-sqlite:
+	cd $(djangoProject) && DEBUG=1 uv run manage.py dbshell --database=sqlite
+
+# View the Postgres database.
+sql-pg:
+	cd $(djangoProject) && DEBUG=1 uv run manage.py dbshell --database=pg
+
+# Copy the SQLite database down from the server.
+grab-db:
+	cp -f $(sqliteFile) $(sqliteFile)-bak
+	scp -i conf/server.pem ubuntu@$(shell tomlq .hostname conf/deploy.toml -r):$(project)/$(sqliteFile) .
+
+# Change to using the Postgres server for the database.
+db-use-pg:
+	tomlq -t '.DB.sqlite = false' $(deployFile) | sponge $(deployFile)
+
+db-use-sqlite:
+	tomlq -t '.DB.sqlite = true' $(deployFile) | sponge $(deployFile)
+
+# Clone the Postgres database to SQLite.
+# Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
+sync-to-sqlite:
+	@echo
+	@echo "This will replace the existing local copy of the SQLite database, $(sqliteFile)."
+	@make confirm
+	cp $(sqliteFile) $(sqliteFile)-bak
+	cd $(djangoProject) && uv run manage.py flush --database=sqlite
+	cd $(djangoProject) && uv run manage.py migrate --database=sqlite
+	cd $(djangoProject) && uv run manage.py dumpdata --database=pg --natural-foreign --natural-primary | uv run manage.py loaddata --database=sqlite --format=json -
+
+# Clone the SQLite database to Postgres.
+# Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
+sync-to-pg:
+	@echo
+	@echo "This will replace ALL CONTENTS of the configured Postgres database, $(shell tomlq .dbhost conf/deploy.toml -r):$(shell tomlq .dbName conf/deploy.toml -r)."
+	@make confirm
+	cd $(djangoProject) && uv run manage.py flush --database=pg
+	cd $(djangoProject) && uv run manage.py migrate --database=pg
+	cd $(djangoProject) && uv run manage.py dumpdata --database=sqlite --natural-foreign --natural-primary | uv run manage.py loaddata --database=pg --format=json -
+
+
+#############################################################################
+# Database maintenance, generally run only on the server.
+
+# Clone the Postgres database to SQLite.
+# Make sure any other servers using the same Postgres database are stopped.
+sync-to-sqlite-server:
+	make https-maintenance stop
+	make sync-to-sqlite
+	make start https-normal
+
+# Clone the SQLite database to Postgres.
+# Make sure any other servers using the same Postgres database are stopped.
+sync-to-pg-server:
+	make https-maintenance stop
+	make sync-to-pg
+	make start https-normal
+
+# Switches a live production database over from SQLite to Postgres,
+# syncing the database over in the process, with maintenance mode on during.
+# Updates the deploy.toml file, so production will be out of sync with Git afterward.
+db-move-sqlite-to-pg:
+	# Ensure the database is spun up before we stop the server.
+	cd $(djangoProject) && uv run manage.py dbshell -- -c "SELECT COUNT(*) FROM auth_user;"
+	make https-maintenance stop
+	make sync-to-pg
+	make db-use-pg
+	make start https-normal
+
+# Same, but in the other direction.
+db-move-pg-to-sqlite:
+	make https-maintenance stop
+	make sync-to-sqlite
+	make db-use-sqlite
+	make start https-normal
 
 
 #######################################################################

@@ -10,7 +10,11 @@ To use the Django features, add these settings to your `deploy.toml` file:
   * `Django.mainApp` - The directory name of the Django app that contains settings, etc.  Under the project directory.
   * `Django.modelVizApps` - Apps whose schemata you want to be documented in model-viz.png.  Defaults to all.  Requires django-extesnsions and pydot.
   * `DB.dbhost` - The hostname of the Postgres database to use.
-  * `DB.sqlite` - if `true`, Django will use a local SQL database in `django.db` rather than Postgres.
+  * `DB.dbName` - The name of the Postgres database, within that host.
+  * `DB.dbUser` - The Postgres user name to use to access the database.
+  * `DB.dbPassword` - The Postgres password to use to access the database.
+  * `DB.sqlite` - If `true`, Django will use a local SQL database in `django.db` rather than Postgres.
+  * `DB.sqliteFile` - The file name to use for a SQLite database.
 
 If you're using an existing Amazon Aurora database, you'll need to find the database hostname, as follows:
 1. Go to the AWS RDS page.

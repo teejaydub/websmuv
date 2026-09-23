@@ -15,5 +15,8 @@ modelVizApps = ""
 
 [DB]
 dbhost = "localhost"
+dbUser = "django"
+dbName = "django"
+dbPassword = "foo"
 sqlite = true
 sqliteFile = "django.db"
