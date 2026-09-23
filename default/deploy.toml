@@ -11,6 +11,7 @@ publicIP = "127.0.0.1"
 [Django]
 project = "myapp"
 mainApp = "myapp"
+modelVizApps = ""
 
 [DB]
 dbhost = "localhost"

@@ -8,6 +8,7 @@ To use the Django features, add these settings to your `deploy.toml` file:
 
   * `Django.project` - The directory name of the Django main project.
   * `Django.mainApp` - The directory name of the Django app that contains settings, etc.  Under the project directory.
+  * `Django.modelVizApps` - Apps whose schemata you want to be documented in model-viz.png.  Defaults to all.  Requires django-extesnsions and pydot.
   * `DB.dbhost` - The hostname of the Postgres database to use.
   * `DB.sqlite` - if `true`, Django will use a local SQL database in `django.db` rather than Postgres.
 

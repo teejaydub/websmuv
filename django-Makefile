@@ -1,4 +1,5 @@
 # Django targets to share among websmuv projects.
+.MAKEFLAGS += --no-print-directory
 
 # Links the websmuv-provided Django modules where Python can find them, only if needed.
 deployFile := conf/deploy.toml
@@ -60,6 +61,8 @@ debug-log-run:
 	export DJANGO_LOG_LEVEL=DEBUG && cd $(djangoProject) && DEBUG=1 uv run manage.py runserver
 
 # Runs all unit tests, with warnings on.
+# Also reformats and checks structure.
+# Requires ruff.
 test:
 	uvx ruff format
 	cd $(djangoProject) && uv run python -Wa manage.py test --keepdb --failfast --pdb
@@ -76,21 +79,38 @@ test-mail:
 # Update the environment with new modules or schema updates.
 update-dev:
 	uv sync --dev
-	make collectstatic
-	make migrate
+	$(MAKE) collectstatic
+	$(MAKE) migrate
 
 # Update the environment for running as a server.
 # You should probably be running update-server, but it's here for comparison with update-dev.
 update-run:
 	uv sync --no-dev
-	make collectstatic
-	make migrate
+	$(MAKE) collectstatic
+	$(MAKE) migrate
 
 # Upgrade all packages to their latest available versions.
 upgrade:
 	uv self update
 	uv sync --upgrade --dev
 	git submodule update --recursive
+
+# Do this after editing models; then you should probably inspect the migrations.
+# And when you're done modifying the database, it's handy to make model-viz.
+migrations:
+	cd $(djangoProject) && uv run manage.py makemigrations --dry-run
+	cd $(djangoProject) && echo "" | xargs -p uv run manage.py makemigrations
+	$(MAKE) model-viz
+
+# Update the graph of the models - for just the interesting ones.
+# Requires django-extensions and pydot.
+model-viz:
+	cd $(djangoProject) && DEBUG=1 uv run manage.py graph_models $(shell tomlq .Django.modelVizApps $(deployFile) -r) -o ../model-viz.png
+
+# Run Python commands with all the model classes loaded.
+# Requires django-extensions.
+shell:
+	cd $(djangoProject) && DEBUG=1 uv run manage.py shell_plus
 
 
 #######################################################################
