@@ -33,6 +33,7 @@ You'll also need to include the Django-specific features in your project's Makef
 * Add `from .django_settings import *` to the top of your app's main `settings.py`.
 * Remove the `DATABASES` setting from your existing Django app settings, or further customize the provided settings.
 * Add `django_settings.py` to your project's .gitignore file.  That file is soft-linked; it's weird, but saves other fuss.
+* Add `include $configDir/nginx-django.conf;` to your `config/nginx-app.conf.template`, to get the basic Nginx settings for Django.
 
 ## Django settings
 

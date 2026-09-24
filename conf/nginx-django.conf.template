@@ -1,0 +1,33 @@
+# Django-specific directives for the nginx server, shared among all Django projects.
+# These are customized with the usual template variables.
+	
+	# Allow serving static files directly within Nginx.
+	# (Will have to parameterize this to support S3/CloudFront serving.)
+    location /static/ {
+        root $cwd/$mainapp;
+    }
+
+    # Same with media files.
+    location /media/ {
+        root $cwd/$mainapp/;
+    }
+	
+	# pass everything else to the (reverse) proxy (gunicorn -> django)
+	location / {
+	    proxy_set_header Host $http_host;
+	    proxy_set_header X-Real-IP $remote_addr;
+	    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	    proxy_set_header X-Forwarded-Proto $scheme;
+
+	    # The socket file lives under the project folder to solve permission issues.
+	    proxy_pass http://unix:$cwd/gunicorn.sock;
+	}
+
+	# catch alls, probably not needed or should be customized
+	error_page 404 /404.html;
+	    location = /40x.html {
+	}
+
+	error_page 500 502 503 504 /50x.html;
+	    location = /50x.html {
+	}
