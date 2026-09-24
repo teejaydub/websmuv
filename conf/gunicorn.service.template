@@ -1,0 +1,21 @@
+# Link this into /etc/systemd/system, as root
+[Unit]
+Description=gunicorn daemon for $mainapp
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=$user
+Group=www-data
+WorkingDirectory=$cwd/$mainapp
+ExecStart=/home/$user/.local/bin/uv run gunicorn \
+          --access-logfile - \
+          --workers $workers \
+          --bind unix:$cwd/gunicorn.sock \
+          --timeout 20 \
+          --access-logformat "[REQ] %(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s %(L)s \"%(f)s\" \"%(a)s\"" \
+          $mainapp.$api:application \
+          $extra
+
+[Install]
+WantedBy=multi-user.target

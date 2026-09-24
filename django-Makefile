@@ -23,7 +23,8 @@ $(djangoMainDir)/django_settings.py:
 
 # Some of these may no longer be needed, but they're cheap:
 django-depends:
-	sudo apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+	sudo apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev llvm \
+		libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 	sudo apt install -y graphviz libpq-dev postgresql postgresql-contrib
 	sudo apt install -y wget xdg-utils
 
@@ -120,7 +121,9 @@ migrations:
 # Update the graph of the models - for just the interesting ones.
 # Requires django-extensions and pydot.
 model-viz:
-	cd $(djangoProject) && DEBUG=1 uv run manage.py graph_models $(shell tomlq .Django.modelVizApps $(deployFile) -r) -o ../model-viz.png
+	cd $(djangoProject) && DEBUG=1 uv run manage.py graph_models \
+		$(shell tomlq .Django.modelVizApps $(deployFile) -r) \
+		-o ../model-viz.png
 
 # Run Python commands with all the model classes loaded.
 # Requires django-extensions.
@@ -138,7 +141,9 @@ create-database-pg:
 	@echo "Unlabeled password prompts below will be for the new Postgres user password."
 	createuser -h $(dbhost) -U postgres -l -d -P $(shell tomlq .DB.dbUser conf/deploy.toml -r)
 	@echo "Unlabeled password prompts below will be for the new Postgres user password."
-	createdb -h $(dbhost) -U $(shell tomlq .DB.dbUser conf/deploy.toml -r) -O $(shell tomlq .DB.dbUser conf/deploy.toml -r) $(shell tomlq .DB.dbName conf/deploy.toml -r)
+	createdb -h $(dbhost) -U $(shell tomlq .DB.dbUser conf/deploy.toml -r) \
+		-O $(shell tomlq .DB.dbUser conf/deploy.toml -r) \
+		$(shell tomlq .DB.dbName conf/deploy.toml -r)
 
 # Whatever database, we're using, finish first-time setup from the Django side.
 setup-database: django-settings
@@ -178,7 +183,8 @@ sync-to-sqlite:
 	cp $(sqliteFile) $(sqliteFile)-bak
 	cd $(djangoProject) && uv run manage.py flush --database=sqlite
 	cd $(djangoProject) && uv run manage.py migrate --database=sqlite
-	cd $(djangoProject) && uv run manage.py dumpdata --database=pg --natural-foreign --natural-primary | uv run manage.py loaddata --database=sqlite --format=json -
+	cd $(djangoProject) && uv run manage.py dumpdata --database=pg --natural-foreign --natural-primary \
+		| uv run manage.py loaddata --database=sqlite --format=json -
 
 # Clone the SQLite database to Postgres.
 # Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
@@ -188,7 +194,8 @@ sync-to-pg:
 	@make confirm
 	cd $(djangoProject) && uv run manage.py flush --database=pg
 	cd $(djangoProject) && uv run manage.py migrate --database=pg
-	cd $(djangoProject) && uv run manage.py dumpdata --database=sqlite --natural-foreign --natural-primary | uv run manage.py loaddata --database=pg --format=json -
+	cd $(djangoProject) && uv run manage.py dumpdata --database=sqlite --natural-foreign --natural-primary \
+		| uv run manage.py loaddata --database=pg --format=json -
 
 
 #############################################################################
@@ -283,3 +290,33 @@ last-log:
 
 follow-log:
 	sudo journalctl -f -u gunicorn -n 1000
+
+
+#######################################################################
+# Gunicorn/uvicorn setup.
+# 
+
+# Construct a gunicorn file for hosting via ASGI or WSGI.
+# Requires 'make stop' first.
+# ASGI is hard-coded above under build-server, so this would need to be
+# further parameterized if WSGI is required.
+gunicorn-wsgi: gunicorn-socket
+	uv run python -m template cwd=`pwd` user=`whoami` mainapp=mpi api=wsgi workers=2 extra= \
+		< websmuv/conf/gunicorn.service.template \
+		> gunicorn.service
+
+gunicorn-asgi: gunicorn-socket
+	uv run python -m template cwd=`pwd` user=`whoami` mainapp=mpi api=asgi workers=1 "extra=-k uvicorn.workers.UvicornWorker" \
+		< websmuv/conf/gunicorn.service.template \
+		> gunicorn.service
+
+# Set up the services files for Gunicorn to run Django.
+# Handles initial installation and can be run again at any time to freshen the service files.
+serviceDir = /etc/systemd/system
+gunicorn-install:
+ifeq ("$(wildcard $(serviceDir)/gunicorn.service)", "")
+	sudo ln -s $(shell pwd)/gunicorn.service $(serviceDir)/gunicorn.service
+endif
+ifeq ("$(wildcard $(serviceDir)/gunicorn.socket)", "")
+	sudo ln -s $(shell pwd)/gunicorn.socket $(serviceDir)/gunicorn.socket
+endif

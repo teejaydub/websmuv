@@ -1,6 +1,9 @@
 # Django support in Websmuv
 
-Websmuv has a Django integration. 
+Websmuv has a Django integration.  It handles deployment tasks, and is
+opinionated and biased toward small sites, but aims to be parameterized
+enough to support variation and to not get in the way of letting you control
+things in a Django way.
 
 ## Configuration
 `
@@ -49,3 +52,6 @@ Usage patterns include:
 * Running SQLite efficiently in production, which is more performant and cheaper for small volume
 * Running SQLite in production but using an external Postgres server (e.g. AWS Aurora) to ease migration between servers
 * Migrating to Aurora (or other Postgres installation) only when needed, with minimal effort.
+
+## Tutorial
+

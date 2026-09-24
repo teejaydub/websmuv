@@ -1,0 +1,12 @@
+# Link this into /etc/systemd/system, as root
+[Unit]
+Description=gunicorn socket
+
+[Socket]
+ListenStream=/$cwd/gunicorn.sock
+SocketUser=$user
+SocketGroup=www-data
+
+[Install]
+WantedBy=sockets.target
+
