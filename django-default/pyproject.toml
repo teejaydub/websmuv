@@ -1,0 +1,44 @@
+[project]
+name = "project"
+version = "1.0.0"
+requires-python = "~=3.14.2"
+dependencies = [
+    "django~=6.0",
+    "django-bootstrap5>=25.2",
+    "django-debug-toolbar>=5.2.0",
+    "django-extensions>=4.1",
+    "django-settings-export>=1.2.1",
+    "django-tz-detect>=0.5.0",
+    "gunicorn>=23.0.0",
+    "psycopg[binary]>=3.2.9",
+    "uvicorn>=0.40.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-extensions>=4.1",
+    "docutils>=0.21.2",
+    "freezegun>=1.5.2",
+    "pudb>=2025.1",
+    "pydot>=4.0.0",
+    "ruff>=0.11.13",
+]
+
+[tool.uv]
+default-groups = []
+
+[tool.ruff]
+src = ["*"]
+line-length = 100
+exclude = [
+    "websmuv",
+]
+
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.ruff.lint]
+select = ["B", "C", "E4", "E7", "E9", "F", "DJ", "SIM", "R", "T", "PIE", "DTZ", "ASYNC"]
+ignore = ["F405", "F403", "DJ001", "SIM102", "SIM108",
+    "RET505", "DTZ011"]

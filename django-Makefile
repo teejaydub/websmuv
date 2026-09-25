@@ -4,6 +4,7 @@
 pwd := $(shell pwd)
 projectPath := $(shell dirname $(pwd))
 project := $(shell basename $(projectPath))
+configDir := $(projectPath)/conf
 
 # Links the websmuv-provided Django modules where Python can find them, only if needed.
 deployFile := conf/deploy.toml
@@ -13,6 +14,11 @@ djangoMainDir := $(djangoProject)/$(djangoApp)
 dbhost := $(shell tomlq .DB.dbhost conf/deploy.toml -r)
 sqliteFile := $(shell tomlq .DB.sqliteFile conf/deploy.toml -r)
 
+hostname := $(shell tomlq .hostname $(deployFile) -r)
+ifeq ("$(hostname)", "")
+hostname = localhost
+endif
+
 django-settings: $(djangoMainDir)/django_settings.py
 $(djangoMainDir)/django_settings.py:
 	ln -s $(shell pwd)/websmuv/django_settings.py $(djangoMainDir)/django_settings.py
@@ -21,8 +27,11 @@ $(djangoMainDir)/django_settings.py:
 #############################################################################
 # Initial setup and tools for keeping code up to date.
 
-# Some of these may no longer be needed, but they're cheap:
+# Install websmuv dependences as well as Django ones.
+# Some of these may no longer be needed, but they're cheap.
 django-depends:
+	git submodule update --init
+	cd websmuv; $(MAKE) depends config
 	sudo apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev llvm \
 		libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 	sudo apt install -y graphviz libpq-dev postgresql postgresql-contrib
@@ -36,6 +45,19 @@ reinstall-python:
 	uv self update
 	uv python install --reinstall
 	uv sync --reinstall
+
+# Start a completely new Django project from scratch.
+# Relies on deploy.toml settings for names.
+# Requires django-depends first.
+django-new:
+	cp websmuv/django-default/pyproject.toml .
+	tomlq -t '.project.name = $(djangoProject)' pyproject.toml | sponge pyproject.toml
+	cp websmuv/django-default/.gitignore .
+	echo "$(djangoMainDir)/django_settings.py" >> .gitignore
+	$(MAKE) reinstall-python
+	django-admin startproject $(djangoApp) $(djangoProject)
+	sed -i '1ifrom .django_settings import *" $(djangoMainDir)/settings.py
+	cp websmuv/django-default/nginx-app.conf.template conf/
 
 # Copies all static files provided by apps into a single hierarchy for hosting by a local web server.
 collectstatic: django-settings
@@ -162,24 +184,55 @@ sql-sqlite:
 sql-pg:
 	cd $(djangoProject) && DEBUG=1 uv run manage.py dbshell --database=pg
 
-# Copy the SQLite database down from the server.
-grab-db:
-	cp -f $(sqliteFile) $(sqliteFile)-bak
-	scp -i conf/server.pem ubuntu@$(shell tomlq .hostname conf/deploy.toml -r):$(project)/$(sqliteFile) .
-
 # Change to using the Postgres server for the database.
 db-use-pg:
 	tomlq -t '.DB.sqlite = false' $(deployFile) | sponge $(deployFile)
-
+# Change to using SQLite for the database.
 db-use-sqlite:
 	tomlq -t '.DB.sqlite = true' $(deployFile) | sponge $(deployFile)
+
+# Runs a full SQLite checkpoint - blocks until no writers or old readers.
+# Makes the single .db file contain consistent data (esp. if Write-Ahead Log is used).
+# Does no harm if we're currently using Postgres.
+db-sync-full:
+	sqlite3 $(sqliteFile) 'PRAGMA wal_checkpoint(FULL); vacuum;'
+
+# Make a backup of the SQLite database.
+# Requires that the database isn't being used currently.
+db-backup: db-sync-full
+	cp $(sqliteFile) $(sqliteFile)-bak --backup=numbered
+# Restore the most recent backup over the current database.
+# Requires that the database isn't being used currently.
+db-restore: db-sync-full
+	cp $(sqliteFile)-bak $(sqliteFile)
+
+# Installs a local copy of the current production database.
+# Backs up both local and server, then replaces the local current DB with the server's backup.
+# Puts the server in maintenance mode while working, in order to get a clean copy.
+grab-production-data:
+	ssh -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-enable-maintenance db-backup https-disable-maintenance"
+	make grab-production-backup
+
+# Same, but just grabs the most recent backup that's already on the server.
+grab-production-backup:
+	make db-backup
+	scp -i $(configDir)/server.pem ubuntu@$(hostname):$(project)/$(sqliteFile)-bak $(sqliteFile)
+
+# Copy the current SQLite database from the development machine up to the server.
+# Makes a backup of the current SQLite backup on the server first.
+# This is probably only useful when you're starting production!
+# Though conceivably you could also copy a database down to development, fix it, then copy it back up.
+publish-db-to-production:
+	@echo
+	@echo "This will replace the PRODUCTION SQLite database with the local copy."
+	@make confirm
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-enable-mainteance db-backup"
+	scp -i $(configDir)/server.pem $(sqliteFile) ubuntu@$(hostname):$(project)/$(sqliteFile)
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-disable-maintenance"
 
 # Clone the Postgres database to SQLite.
 # Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
 sync-to-sqlite:
-	@echo
-	@echo "This will replace the existing local copy of the SQLite database, $(sqliteFile)."
-	@make confirm
 	cp $(sqliteFile) $(sqliteFile)-bak
 	cd $(djangoProject) && uv run manage.py flush --database=sqlite
 	cd $(djangoProject) && uv run manage.py migrate --database=sqlite
@@ -202,14 +255,14 @@ sync-to-pg:
 # Database maintenance, generally run only on the server.
 
 # Clone the Postgres database to SQLite.
-# Make sure any other servers using the same Postgres database are stopped.
+# You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-sqlite-server:
 	make https-maintenance stop
 	make sync-to-sqlite
 	make start https-normal
 
 # Clone the SQLite database to Postgres.
-# Make sure any other servers using the same Postgres database are stopped.
+# You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-pg-server:
 	make https-maintenance stop
 	make sync-to-pg
@@ -220,7 +273,7 @@ sync-to-pg-server:
 # Updates the deploy.toml file, so production will be out of sync with Git afterward.
 db-move-sqlite-to-pg:
 	# Ensure the database is spun up before we stop the server.
-	cd $(djangoProject) && uv run manage.py dbshell -- -c "SELECT COUNT(*) FROM auth_user;"
+	cd $(djangoProject) && uv run manage.py dbshell --database=pg -- -c "SELECT COUNT(*) FROM auth_user;" 
 	make https-maintenance stop
 	make sync-to-pg
 	make db-use-pg
@@ -239,7 +292,7 @@ db-move-pg-to-sqlite:
 
 # All the one-time setup for production use: Nginx, firewall, Fail2Ban, Certbot, etc.
 # Requires conf/deploy.toml, as described in `websmuv/README.md`.
-setup-prod:
+django-setup-prod:
 	cd websmuv && make install
 	chmod 755 ~  # Allows nginx to host files within ~/project/app/static
 
@@ -320,7 +373,7 @@ gunicorn-socket:
 	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) \
 		< websmuv/conf/nginx-django.conf.template \
 		> conf/nginx-django.conf
-	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) \
+	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) configDir=$(configDir) \
 		< conf/nginx-app.conf.template \
 		> conf/nginx-app.conf
 	make https-reload

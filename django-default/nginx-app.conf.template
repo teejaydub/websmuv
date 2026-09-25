@@ -1,0 +1,7 @@
+# App-specific directives for the nginx server.
+# Include directives for locations, extra headers, proxying, etc.
+# They'll only be available for the main site using https.
+# This is included into the server section of the main nginx.conf file for the server's hostname.
+
+    # Base settings from Django, instantiated from websmuv's template.
+    include $configDir/nginx-django.conf;

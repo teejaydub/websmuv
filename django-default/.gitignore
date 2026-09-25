@@ -1,0 +1,7 @@
+__pycache__/
+deploy-date.txt
+*.db*
+env/
+static
+gunicorn.service
+gunicorn.socket
