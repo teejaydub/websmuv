@@ -354,12 +354,12 @@ follow-log:
 # ASGI is hard-coded above under build-server, so this would need to be
 # further parameterized if WSGI is required.
 gunicorn-wsgi: gunicorn-socket
-	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) api=wsgi workers=2 extra= \
+	uv run python -m websmuv.template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) api=wsgi workers=2 extra= \
 		< websmuv/conf/gunicorn.service.template \
 		> gunicorn.service
 
 gunicorn-asgi: gunicorn-socket
-	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) api=asgi workers=1 "extra=-k uvicorn.workers.UvicornWorker" \
+	uv run python -m websmuv.template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) api=asgi workers=1 "extra=-k uvicorn.workers.UvicornWorker" \
 		< websmuv/conf/gunicorn.service.template \
 		> gunicorn.service
 
@@ -367,13 +367,13 @@ gunicorn-asgi: gunicorn-socket
 # This allows us to not run Django as root.
 # Also configures Nginx to serve Django via gunicorn/uvicorn.
 gunicorn-socket:
-	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) \
+	uv run python -m websmuv.template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) \
 		< websmuv/conf/gunicorn.socket.template \
 		> gunicorn.socket
-	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) \
+	uv run python -m websmuv.template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) \
 		< websmuv/conf/nginx-django.conf.template \
 		> conf/nginx-django.conf
-	uv run python -m template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) configDir=$(configDir) \
+	uv run python -m websmuv.template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) configDir=$(configDir) \
 		< conf/nginx-app.conf.template \
 		> conf/nginx-app.conf
 	make https-reload

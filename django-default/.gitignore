@@ -5,3 +5,4 @@ env/
 static
 gunicorn.service
 gunicorn.socket
+conf/nginx-django.conf
