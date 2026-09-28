@@ -2,7 +2,7 @@
 .MAKEFLAGS += --no-print-directory
 
 pwd := $(shell pwd)
-projectPath := $(shell dirname $(pwd))
+projectPath := $(pwd)
 project := $(shell basename $(projectPath))
 configDir := $(projectPath)/conf
 
@@ -254,9 +254,14 @@ sync-to-pg:
 #############################################################################
 # Database maintenance, generally run only on the server.
 
+# Ensure the database is active, for use before we stop the server.
+spin-up-postgres:
+	cd $(djangoProject) && uv run manage.py dbshell --database=pg -- -c "SELECT COUNT(*) FROM auth_user;" 
+
 # Clone the Postgres database to SQLite.
 # You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-sqlite-server:
+	make spin-up-postgres
 	make https-maintenance stop
 	make sync-to-sqlite
 	make start https-normal
@@ -264,6 +269,7 @@ sync-to-sqlite-server:
 # Clone the SQLite database to Postgres.
 # You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-pg-server:
+	make spin-up-postgres
 	make https-maintenance stop
 	make sync-to-pg
 	make start https-normal
@@ -272,8 +278,7 @@ sync-to-pg-server:
 # syncing the database over in the process, with maintenance mode on during.
 # Updates the deploy.toml file, so production will be out of sync with Git afterward.
 db-move-sqlite-to-pg:
-	# Ensure the database is spun up before we stop the server.
-	cd $(djangoProject) && uv run manage.py dbshell --database=pg -- -c "SELECT COUNT(*) FROM auth_user;" 
+	make spin-up-postgres
 	make https-maintenance stop
 	make sync-to-pg
 	make db-use-pg
@@ -281,6 +286,7 @@ db-move-sqlite-to-pg:
 
 # Same, but in the other direction.
 db-move-pg-to-sqlite:
+	make spin-up-postgres
 	make https-maintenance stop
 	make sync-to-sqlite
 	make db-use-sqlite
