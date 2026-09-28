@@ -85,17 +85,17 @@ vm-delete:
 # This must print only the instance ID of the new VM in order for vm-replace to work.
 vm-clone:
 	$(shell aws ec2 describe-instances \
-    --instance-ids $(instanceID) \
-    --query "Reservations[*].Instances[*].ImageId" \
-    --output text > imageName.txt)
+	    --instance-ids $(instanceID) \
+	    --query "Reservations[*].Instances[*].ImageId" \
+	    --output text > imageName.txt)
 	$(shell aws ec2 describe-instances \
-	--instance-ids $(instanceID) \
-	--query "Reservations[*].Instances[*].KeyName" \
-	--output text > keyPair.txt)
+		--instance-ids $(instanceID) \
+		--query "Reservations[*].Instances[*].KeyName" \
+		--output text > keyPair.txt)
 	$(shell aws ec2 describe-instances \
-	--instance-ids $(instanceID) \
-	--query "Reservations[*].Instances[*].SecurityGroups[*].GroupId" \
-	--output text > securityGroup.txt)
+		--instance-ids $(instanceID) \
+		--query "Reservations[*].Instances[*].SecurityGroups[*].GroupId" \
+		--output text > securityGroup.txt)
 	@aws ec2 run-instances \
 	    --instance-type $(shell tomlq .AWS.instanceType $(deployFile) -r) \
 	    --count 1 \
@@ -110,9 +110,9 @@ vm-clone:
 # Does vm-clone, and also deletes the old instance and assigns its public IP to the new instance.
 vm-replace: 
 	$(shell aws ec2 describe-addresses \
-	--filters "Name=instance-id,Values=$(instanceID)" \
-	--query "Addresses[*].PublicIp" \
-	--output text > publicIP.txt)
+		--filters "Name=instance-id,Values=$(instanceID)" \
+		--query "Addresses[*].PublicIp" \
+		--output text > publicIP.txt)
 	@$(shell $(MAKE) vm-clone > newInstanceID.txt)
 	@echo New instance ID: $(shell cat newInstanceID.txt)
 	@tomlq -t '.AWS.instanceID = "$(shell cat newInstanceID.txt)"' $(deployFile) | sponge $(deployFile)
