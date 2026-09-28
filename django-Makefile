@@ -210,7 +210,7 @@ db-restore: db-sync-full
 # Backs up both local and server, then replaces the local current DB with the server's backup.
 # Puts the server in maintenance mode while working, in order to get a clean copy.
 grab-production-data:
-	ssh -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-enable-maintenance db-backup https-disable-maintenance"
+	ssh -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-maintenance db-backup https-normal"
 	make grab-production-backup
 
 # Same, but just grabs the most recent backup that's already on the server.
@@ -226,9 +226,9 @@ publish-db-to-production:
 	@echo
 	@echo "This will replace the PRODUCTION SQLite database with the local copy."
 	@make confirm
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-enable-maintenance db-backup"
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-maintenance db-backup"
 	scp -i $(configDir)/server.pem $(sqliteFile) ubuntu@$(hostname):$(project)/$(sqliteFile)
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-disable-maintenance"
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-normal"
 
 # Clone the Postgres database to SQLite.
 # Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
