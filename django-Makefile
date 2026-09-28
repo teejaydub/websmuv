@@ -226,7 +226,7 @@ publish-db-to-production:
 	@echo
 	@echo "This will replace the PRODUCTION SQLite database with the local copy."
 	@make confirm
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-enable-mainteance db-backup"
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-enable-maintenance db-backup"
 	scp -i $(configDir)/server.pem $(sqliteFile) ubuntu@$(hostname):$(project)/$(sqliteFile)
 	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "cd $(project); make https-disable-maintenance"
 
