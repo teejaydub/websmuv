@@ -152,12 +152,12 @@ vm-bless:
 
 # Reset this instance to its instance-specific public IP address,
 # which is presumably different from the production IP.
-# (This is not normally used to back out changes, because you would also need to )
 vm-curse:
 	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.publicIP' $(deployFile) -r)
+	@ssh-keygen -f '$(HOME)/.ssh/known_hosts' -R '$(hostname)'
 
-# Names this instance after its hostname, primarily to make it easy to see in the AWS console.
+# Names this instance after its hostname, primarily to make it easy to find in the AWS console.
 vm-rename:
 	aws ec2 create-tags --resources $(instanceID) --tags "Key=Name,Value=$(hostname)"
 
