@@ -129,7 +129,7 @@ vm-replace:
 
 # Install all pending patches for the VM, and incidentally the ones we initially need.
 vm-patch:
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "sudo apt update && sudo apt upgrade -y && sudo apt install git make -y"
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "sudo apt update && sudo apt upgrade -y && sudo apt install git make -y && sudo autoremove -y"
 
 vm-reboot:
 	@echo "Rebooting; it's normal to see a notice that the connection was dropped."
