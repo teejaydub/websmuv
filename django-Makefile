@@ -210,7 +210,7 @@ db-restore: db-sync-full
 # Backs up both local and server, then replaces the local current DB with the server's backup.
 # Puts the server in maintenance mode while working, in order to get a clean copy.
 grab-production-data:
-	ssh -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make https-maintenance db-backup https-normal'"
+	ssh -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make lock-db db-backup unlock-db'"
 	make grab-production-backup
 
 # Same, but just grabs the most recent backup that's already on the server.
@@ -226,9 +226,9 @@ publish-db-to-production:
 	@echo
 	@echo "This will replace the PRODUCTION SQLite database with the local copy."
 	@make confirm
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make https-maintenance db-backup'"
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make lock-db db-backup'"
 	scp -i $(configDir)/server.pem $(sqliteFile) ubuntu@$(hostname):$(project)/$(sqliteFile)
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make https-normal'"
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make unlock-db'"
 
 # Clone the Postgres database to SQLite.
 # Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
@@ -254,43 +254,52 @@ sync-to-pg:
 #############################################################################
 # Database maintenance, generally run only on the server.
 
-# Ensure the database is active, for use before we stop the server.
+# Ensure the database server is active, for use before we stop the server.
 spin-up-postgres:
 	cd $(djangoProject) && uv run manage.py dbshell --database=pg -- -c "SELECT COUNT(*) FROM auth_user;" 
+
+# Lock the database to work with its files directly.
+# This also stops the Django server gracefully and puts it in maintenance mode.
+lock-db:
+	$(MAKE) https-maintenance
+	$(MAKE) stop
+unlock-db:
+	$(MAKE) start
+	$(MAKE) https-normal
 
 # Clone the Postgres database to SQLite.
 # You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-sqlite-server:
 	make spin-up-postgres
-	make https-maintenance stop
+	make lock-db
 	make sync-to-sqlite
-	make start https-normal
+	make unlock-db
 
 # Clone the SQLite database to Postgres.
 # You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-pg-server:
 	make spin-up-postgres
-	make https-maintenance stop
+	make lock-db
 	make sync-to-pg
-	make start https-normal
+	make unlock-db
 
 # Switches a live production database over from SQLite to Postgres,
-# syncing the database over in the process, with maintenance mode on during.
+# syncing the database over in the process, locking it while doing so.
 # Updates the deploy.toml file, so production will be out of sync with Git afterward.
 db-move-sqlite-to-pg:
 	make spin-up-postgres
-	make https-maintenance stop
+	make lock-db
 	make sync-to-pg
 	make db-use-pg
-	make start https-normal
+	make unlock-db
 
 # Same, but in the other direction.
 db-move-pg-to-sqlite:
 	make spin-up-postgres
-	make https-maintenance stop
+	make lock-db
 	make sync-to-sqlite
 	make db-use-sqlite
-	make start https-normal
+	make unlock-db
 
 
 #######################################################################
