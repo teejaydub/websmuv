@@ -271,35 +271,35 @@ unlock-db:
 # You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-sqlite-server:
 	make spin-up-postgres
-	make lock-db
-	make sync-to-sqlite
-	make unlock-db
+	$(MAKE) lock-db
+	$(MAKE) sync-to-sqlite
+	$(MAKE) unlock-db
 
 # Clone the SQLite database to Postgres.
 # You should make sure any other servers using the same Postgres database are stopped first.
 sync-to-pg-server:
-	make spin-up-postgres
-	make lock-db
-	make sync-to-pg
-	make unlock-db
+	$(MAKE) spin-up-postgres
+	$(MAKE) lock-db
+	$(MAKE) sync-to-pg
+	$(MAKE) unlock-db
 
 # Switches a live production database over from SQLite to Postgres,
 # syncing the database over in the process, locking it while doing so.
 # Updates the deploy.toml file, so production will be out of sync with Git afterward.
 db-move-sqlite-to-pg:
-	make spin-up-postgres
-	make lock-db
-	make sync-to-pg
-	make db-use-pg
-	make unlock-db
+	$(MAKE) spin-up-postgres
+	$(MAKE) lock-db
+	$(MAKE) sync-to-pg
+	$(MAKE) db-use-pg
+	$(MAKE) unlock-db
 
 # Same, but in the other direction.
 db-move-pg-to-sqlite:
-	make spin-up-postgres
-	make lock-db
-	make sync-to-sqlite
-	make db-use-sqlite
-	make unlock-db
+	$(MAKE) spin-up-postgres
+	$(MAKE) lock-db
+	$(MAKE) sync-to-sqlite
+	$(MAKE) db-use-sqlite
+	$(MAKE) unlock-db
 
 
 #######################################################################
@@ -308,14 +308,14 @@ db-move-pg-to-sqlite:
 # All the one-time setup for production use: Nginx, firewall, Fail2Ban, Certbot, etc.
 # Requires conf/deploy.toml, as described in `websmuv/README.md`.
 django-setup-prod:
-	cd websmuv && make install
+	cd websmuv && $(MAKE) install
 	chmod 755 ~  # Allows nginx to host files within ~/project/app/static
 
 # Update all the code on the server, and cycle the running server down and back up again to activate it.
 update-server:
 	uv self update
 	git pull --recurse-submodules
-	make build-server
+	$(MAKE) build-server
 
 # Used to provide settings.DEPLOY_DATE for use in templates.
 deploy-date:
@@ -324,16 +324,16 @@ deploy-date:
 # Rebuild the deployment, with a new date, and ensure everything's up to date.
 # Recover after a bad update-server by "git checkout <previous tag name>", then running this.
 build-server: django-settings
-	make websmuv-update-start
-	make deploy-date
-	-make stop
-	make update-run
-	make gunicorn-asgi
-	make gunicorn-install
-	make websmuv-update-middle
-	make restart
-	make websmuv-update-end
-	make server-status
+	$(MAKE) websmuv-update-start
+	$(MAKE) deploy-date
+	-$(MAKE) stop
+	$(MAKE) update-run
+	$(MAKE) gunicorn-asgi
+	$(MAKE) gunicorn-install
+	$(MAKE) websmuv-update-middle
+	$(MAKE) restart
+	$(MAKE) websmuv-update-end
+	$(MAKE) server-status
 
 start:
 	sudo systemctl start gunicorn.socket
@@ -391,7 +391,7 @@ gunicorn-socket:
 	uv run python -m websmuv.template cwd=`pwd` user=`whoami` mainapp=$(djangoApp) configDir=$(configDir) \
 		< conf/nginx-app.conf.template \
 		> conf/nginx-app.conf
-	make https-reload
+	$(MAKE) https-reload
 
 # Set up the services files for Gunicorn to run Django.
 # Handles initial installation and can be run again at any time to freshen the service files.
