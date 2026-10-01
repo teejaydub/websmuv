@@ -206,29 +206,6 @@ db-backup: db-sync-full
 db-restore: db-sync-full
 	cp $(sqliteFile)-bak $(sqliteFile)
 
-# Installs a local copy of the current production database.
-# Backs up both local and server, then replaces the local current DB with the server's backup.
-# Puts the server in maintenance mode while working, in order to get a clean copy.
-grab-production-data:
-	ssh -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make lock-db db-backup unlock-db'"
-	make grab-production-backup
-
-# Same, but just grabs the most recent backup that's already on the server.
-grab-production-backup:
-	make db-backup
-	scp -i $(configDir)/server.pem ubuntu@$(hostname):$(project)/$(sqliteFile)-bak $(sqliteFile)
-
-# Copy the current SQLite database from the development machine up to the server.
-# Makes a backup of the current SQLite backup on the server first.
-# This is probably only useful when you're starting production!
-# Though conceivably you could also copy a database down to development, fix it, then copy it back up.
-publish-db-to-production:
-	@echo
-	@echo "This will replace the PRODUCTION SQLite database with the local copy."
-	@make confirm
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make lock-db db-backup'"
-	scp -i $(configDir)/server.pem $(sqliteFile) ubuntu@$(hostname):$(project)/$(sqliteFile)
-	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make unlock-db'"
 
 # Clone the Postgres database to SQLite.
 # Use the -server variant below on a production server, to ensure it's not disturbed by other users during the process.
@@ -249,6 +226,45 @@ sync-to-pg:
 	cd $(djangoProject) && uv run manage.py migrate --database=pg
 	cd $(djangoProject) && uv run manage.py dumpdata --database=sqlite --natural-foreign --natural-primary \
 		| uv run manage.py loaddata --database=pg --format=json -
+
+
+#############################################################################
+# Database copying; run from development, but affects server instance.
+
+# Installs a local copy of the current production database.
+# Backs up both local and server, then replaces the local current DB with the server's backup.
+# Puts the server in maintenance mode while working, in order to get a clean copy.
+grab-production-data:
+	ssh -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make lock-db db-backup unlock-db'"
+	make grab-production-backup
+
+# Same, but just grabs the most recent backup that's already on the server.
+grab-production-backup:
+	make db-backup
+	scp -i $(configDir)/server.pem ubuntu@$(hostname):$(project)/$(sqliteFile)-bak $(sqliteFile)
+
+# Same, but grabs the current live backup, requiring the caller to take care of explicit locking/unlocking.
+grab-production-data-live:
+	scp -i $(configDir)/server.pem ubuntu@$(hostname):$(project)/$(sqliteFile) $(sqliteFile)
+lock-production-data:
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make lock-db db-sync-full'"
+unlock-production-data:
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make unlock-db'"
+
+# Copy the current SQLite database from the development machine up to the server.
+# Makes a backup of the current SQLite backup on the server first.
+# This is probably only useful when you're starting production!
+# Though conceivably you could also copy a database down to development, fix it, then copy it back up.
+publish-db-to-production:
+	@echo
+	@echo "This will replace the PRODUCTION SQLite database on $(hostname) with the local copy."
+	@make confirm
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make lock-db db-backup'"
+	$(MAKE) publish-db-to-production-live
+	ssh -t -i $(configDir)/server.pem ubuntu@$(hostname) "bash -l -c 'cd $(project); make unlock-db'"
+# Same with no backups and no locking protection.
+publish-db-to-production-live:
+	scp -i $(configDir)/server.pem $(sqliteFile) ubuntu@$(hostname):$(project)/$(sqliteFile)
 
 
 #############################################################################
@@ -327,6 +343,7 @@ build-server: django-settings
 	$(MAKE) websmuv-update-start
 	$(MAKE) deploy-date
 	-$(MAKE) stop
+	$(MAKE) set-hostname
 	$(MAKE) update-run
 	$(MAKE) gunicorn-asgi
 	$(MAKE) gunicorn-install
