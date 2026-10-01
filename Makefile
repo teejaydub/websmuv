@@ -142,17 +142,17 @@ vm-resize: vm-stop vm-wait-stopped
 	$(MAKE) vm-start
 
 # Assign the production IP address to this instance.
-# Note in deploy.toml that the public IP has changed to the production IP.
+# Note in deploy.toml that the current public IP has changed to the production IP.
 # Notify SSH that its cached data for this hostname is invalid.
-vm-bless:
+vm-bless-to-prod:
 	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.prodIP' $(deployFile) -r)
 	tomlq -t '.AWS.publicIP = .AWS.prodIP'  $(deployFile) | sponge $(deployFile)
 	ssh-keygen -f '$(HOME)/.ssh/known_hosts' -R $(hostname)
 
-# Reset this instance to its instance-specific public IP address,
-# which is presumably different from the production IP.
-vm-curse:
+# Reset this instance to its configured public IP address,
+# which is presumably different from the current instance's associated IP.
+vm-reset-ip:
 	aws ec2 associate-address --instance-id $(instanceID) \
 		--public-ip $(shell tomlq '.AWS.publicIP' $(deployFile) -r)
 	@ssh-keygen -f '$(HOME)/.ssh/known_hosts' -R '$(hostname)'
@@ -172,9 +172,10 @@ install: depends config https-install certs-install jail-install https-restart s
 confirm:
 	@echo -n "Are you sure? [y/N] " && read ans && [ "$${ans}" = "y" -o "$${ans}" = "Y" ]
 
-# Sets the hostname to match the external hostname.
+# Sets the hostname to match the configured hostname.
 # Just a nicety to help keep it clear when you've SSHed into the server vs. still on your dev machine.
 # Confirm because we don't want to do it on a dev machine.
+# Does nothing, quickly, if the hostname already matches.
 set-hostname:
 	@echo
 ifneq ("$(hostname)", "localhost")
