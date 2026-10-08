@@ -73,10 +73,10 @@ vm-resize:
 	@$(MAKE) --no-print-directory -C websmuv vm-resize
 
 vm-bless-to-prod:
-	@$(MAKE) --no-print-directory -C websmuv vm-bless
+	@$(MAKE) --no-print-directory -C websmuv vm-bless-to-prod
 
 vm-reset-ip:
-	@$(MAKE) --no-print-directory -C websmuv vm-curse
+	@$(MAKE) --no-print-directory -C websmuv vm-reset-ip
 
 vm-rename:
 	@$(MAKE) --no-print-directory -C websmuv vm-rename
