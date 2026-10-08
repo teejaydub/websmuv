@@ -396,6 +396,7 @@ update-start:
 	$(MAKE) https-enable-maintenance https-reload
 
 update-middle:
+	$(MAKE) set-hostname
 	$(MAKE) certs-configure
 	$(MAKE) https-configure jail-configure
 	$(MAKE) diskalert-upgrade

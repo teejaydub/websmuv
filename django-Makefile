@@ -343,7 +343,6 @@ build-server: django-settings
 	$(MAKE) websmuv-update-start
 	$(MAKE) deploy-date
 	-$(MAKE) stop
-	$(MAKE) set-hostname
 	$(MAKE) update-run
 	$(MAKE) gunicorn-asgi
 	$(MAKE) gunicorn-install
