@@ -13,12 +13,11 @@ Features provided:
 
 * Quick setup - put an existing project on a new VM in under a minute.
 * Configures a maintenance mode in the web server, for an "unavailable due to system maintenance" message.
-* Sets up and renews certificates transparently via Let's Encrypt, including during development.
+* Sets up and renews certificates transparently via Let's Encrypt, including during server testing.
 * Configure custom settings for the web server to connect to your application server, cleanly and separately from basic behavior.
 * Warns via email when disk space is low.
 * Bans IP addresses temporarily when suspicious activity is detected.
 * Sets up simple console diagnostic tools like htop and iotop.
-* Test connectivity before deployment.
 * Quick redeployment if you're switching from an existing VM to a new one.
 * Quick and reliable VM resizing.
 * Support for Django sites and databases.
@@ -41,12 +40,13 @@ are configured initially and kept updated via pulling from Git.
 
 Each deployment to a given VM has its own Git branch.
 
-Adapting to varying workflows is done by resizing VMs, or sharing load among a
-finite and named set of VMs. If you have wildly varying loads and want to
-scale up and down dynamically and rapidly, this is probably not the model for
-you.
+Adapting server capacity to varying workflows is done by resizing VMs, or
+sharing the load among a finite and named set of VMs. If you have wildly
+varying loads and want to scale up and down dynamically and rapidly, this may
+not be the model for you (though it can still be a good basis for development
+and testing even if you're not using it for production deployment).
 
-Websmuv is used a Git submodule to an existing app project - so `..` is the
+Websmuv is used as a Git submodule to an existing app project - so `..` is the
 parent app.
 
 Per-project configuration is mostly done with text and TOML files that live in
@@ -55,8 +55,8 @@ Per-project configuration is mostly done with text and TOML files that live in
 Default config files are provided, and copied to the app conf during install
 if they don't exist.
 
-Config files would be committed to a parent's **private** repository - though
-currently they don't include (major) secrets.
+Config files would be committed to a parent's **private** repository, and may
+include secrets.
 
 ## Conventions
 
@@ -76,7 +76,7 @@ the same.  Configuration files tend to have the name of the tool
 distinct in your project repository during a transition from one tool to
 another.
 
-## Setup 
+## Adding Websmuv to a project
 
 In the app project, usually on a development machine:
 ```
@@ -108,12 +108,13 @@ Then edit the newly-created files in `../conf`:
 * `nginx.conf.template` - extra configuration for the app under Nginx; leave $hostname etc. there so it'll be auto-configured later.
 * `jail.local` - includes instructions for banning IP addresses issuing too many requests per second.  See below.
 
-These files will be soft-linked from elsewhere when needed, so they can be edited in `myapp/conf`, 
-committed to Git, etc.
+These files will be soft-linked from elsewhere on the server when needed, so
+they can be edited in `myapp/conf`, committed to Git, etc.
 
-Also add `include websmuv/app-Makefile` to the top of your app's Makefile,
-and make sure your app's Makefile includes `make start` and `make stop`.
-See `app-Makefile` for other useful make targets that can be done from the app directory.
+Also add `include websmuv/app-Makefile` to the top of your app's Makefile, and
+make sure your app's Makefile includes `make start` and `make stop`. See
+`app-Makefile` for many useful make targets that can be run from the app
+directory.
 
 Commit and push your changes in the app project.
 
@@ -149,7 +150,9 @@ git clone https://www.github.com/...myapp --recurse-submodules
 ```
 (and set a GitHub key for deployment usage, or authenticate a different way).
 
-Or, if the VM already has the project and you're adding websmuv to it for the first time:
+Or, if the VM instance already has the project and you've added websmuv to the
+repository for the first time:
+
 ```
 cd myapp
 git pull
@@ -165,17 +168,18 @@ make install
 ```
 (It's nice to build this into a `make install` target in the parent project's Makefile.)
 
-If you do this on your dev machine, with `hostname` set to `localhost`, then
-browse to `http://localhost`, you'll normally see the default nginx welcome
-page, or other static HTML content if you have that on your system
-(by default, in `/var/www/html`).
+If you do this server install on your dev machine, with `hostname` set to
+`localhost`, then browse to `http://localhost`, you'll normally see the
+default nginx welcome page, or other static HTML content if you have that on
+your system (by default, in `/var/www/html`).
 
 
 ## Maintenance mode
 
 To put the whole app into maintenance mode, first edit
 `conf/maintenance.html`.  Then, from the main project directory on the
-server: 
+server:
+
 ```
 make https-maintenance
 ```
@@ -185,10 +189,12 @@ To go back to normal hosting:
 make https-normal
 ```
 
-The text for this page is taken from `conf/maintenance.html` from the app project, and exists
-independently from any other HTML hosted by the nginx sever normally.
+The text for the maintenance page is taken from `conf/maintenance.html` from
+the app project, and exists independently from any other HTML hosted by the
+nginx sever normally.
 
-Edits to `conf/maintenance.html` will take effect when `make https-maintenance` is next done in the parent app.
+Edits to `conf/maintenance.html` will take effect when `make
+https-maintenance` is next done in the parent app.
 
 
 ## Changing configuration
