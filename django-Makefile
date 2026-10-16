@@ -429,3 +429,4 @@ endif
 ifeq ("$(wildcard $(serviceDir)/gunicorn.socket)", "")
 	sudo ln -s $(shell pwd)/gunicorn.socket $(serviceDir)/gunicorn.socket
 endif
+	cat websmuv/conf/nginx-service-override.conf | sudo systemctl edit nginx --stdin
