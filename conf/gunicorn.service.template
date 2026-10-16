@@ -6,6 +6,10 @@ After=network.target
 
 [Service]
 Type=notify
+
+# Allows the main Gunicorn master process to send the notification while running under UV.
+NotifyAccess=all
+
 User=$user
 Group=www-data
 WorkingDirectory=$cwd/$mainapp
@@ -17,7 +21,13 @@ ExecStart=/home/$user/.local/bin/uv run gunicorn \
           --access-logformat "[REQ] %(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s %(L)s \"%(f)s\" \"%(a)s\"" \
           $mainapp.$api:application \
           $extra
-ExecClean=/bin/rm -f $cwd/gunicorn.sock
+
+# Enables seamless zero-downtime reloads on 'systemctl reload'
+ExecReload=/bin/kill -s HUP $MAINPID
+
+KillMode=mixed
+TimeoutStopSec=5
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
