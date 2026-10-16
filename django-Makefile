@@ -370,6 +370,12 @@ restart:
 server-status:
 	sudo systemctl status gunicorn --no-pager
 
+diagnose:
+	sudo systemctl is-active nginx
+	sudo systemctl is-active gunicorn
+	wget http://localhost:8000
+	@echo "All stack components look functional."
+
 log:
 	sudo journalctl -u gunicorn -r
 
