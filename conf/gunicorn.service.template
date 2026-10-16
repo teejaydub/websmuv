@@ -5,6 +5,7 @@ Requires=gunicorn.socket
 After=network.target
 
 [Service]
+Type=notify
 User=$user
 Group=www-data
 WorkingDirectory=$cwd/$mainapp
@@ -16,6 +17,7 @@ ExecStart=/home/$user/.local/bin/uv run gunicorn \
           --access-logformat "[REQ] %(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s %(L)s \"%(f)s\" \"%(a)s\"" \
           $mainapp.$api:application \
           $extra
+ExecClean=/bin/rm -f $cwd/gunicorn.sock
 
 [Install]
 WantedBy=multi-user.target
