@@ -373,7 +373,7 @@ server-status:
 diagnose:
 	sudo systemctl is-active nginx
 	sudo systemctl is-active gunicorn
-	wget http://localhost:8000
+	wget --spider http://127.0.0.1
 	@echo "All stack components look functional."
 
 log:
