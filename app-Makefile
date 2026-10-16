@@ -13,6 +13,9 @@ https-maintenance:
 https-normal:
 	@$(MAKE) --no-print-directory -C websmuv https-configure https-disable-maintenance https-enable-redirect https-reload https-status
 
+https-status:
+	@$(MAKE) --no-print-directory -C websmuv https-status
+
 https-reload:
 	@$(MAKE) --no-print-directory -C websmuv https-reload
 
