@@ -353,7 +353,7 @@ build-server: django-settings
 	$(MAKE) websmuv-update-middle
 	$(MAKE) restart
 	$(MAKE) websmuv-update-end
-	$(MAKE) server-status
+	$(MAKE) status
 
 start:
 	sudo systemctl start gunicorn.socket
@@ -367,7 +367,7 @@ restart:
 	sudo systemctl daemon-reload
 	sudo systemctl reload-or-restart gunicorn
 
-server-status:
+status:
 	sudo systemctl status gunicorn --no-pager
 
 diagnose:

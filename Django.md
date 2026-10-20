@@ -233,8 +233,11 @@ git merge master  # or otherwise update as needed; leave deploy.toml unchanged
 git push
 make ssh
 make update-server
-exit
 ```
+
+If something doesn't work, try `make diagnose` on the server to check the
+status of each piece of the stack, from bottom up.  It'll stop when something
+doesn't seem to be working.
 
 
 ### Solving update problems
@@ -592,7 +595,7 @@ transition that to production.  Start on the dev machine.
    # make publish-db-to-server-live  # optional, if using SQLite and there were changes
    make unlock-db
    ```
-   This will end production downtime.
+   This will end production downtime.  You can `make diagnose` to confirm all is well.
 
    Then reactivate the test instance, so you can do further testing with it:
    ```
