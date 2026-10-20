@@ -233,8 +233,11 @@ git merge master  # or otherwise update as needed; leave deploy.toml unchanged
 git push
 make ssh
 make update-server
-exit
 ```
+
+If something doesn't work, try `make diagnose` on the server to check the
+status of each piece of the stack, from bottom up.  It'll stop when something
+doesn't seem to be working.
 
 
 ### Solving update problems
@@ -460,16 +463,19 @@ committed to Git, for additional security.
 1. Prep the test branch for any further porting that needs to be done:
    ```
    git checkout test
-   git log  # and copy the most recent commit hash
+   git tag -f last-test
    git merge prod
    git merge master
-   git restore -s <commit> conf/deploy.toml  # restore test deployment
+   git restore -s last-test conf/deploy.toml  # restore test deployment
    ```
    and commit as needed.
 
-   The log/restore steps ensure that the test hostname, instance, IPs, and
+   The tag/restore steps ensure that the test hostname, instance, IPs, and
    other deployment config aren't modified by the merges.  If there are new
    entries in `deploy.toml` that you want to copy, merge those by hand.
+   A better way to fix changes from creeping back to the main line is to
+   remove those commits from the `test` branch, but this is complex (and
+   maybe best done using lazygit).
 
 ### Make the new EC2 instance for test deployment
 
@@ -478,19 +484,25 @@ right OS image, security groups, etc. Connect it to the right Elastic IP
 and hostname for testing. Copy those to `conf/deploy.toml` on dev, and
 commit.
 
-If you just want the same instance type as is currently used in production,
-check out the `prod` branch, `make vm-clone`, then check out `test` again,
-copy the reported instance ID into its `deploy.toml`, then `make vm-reset-ip`
-to assign the test Elastic IP to that instance.
-
-Then follow the procedure "Installing the server on an EC2 VM instance" above,
-except `git checkout test` just after `git fetch`.  And instead of
-initializing the database with empty data, do this from dev:
-
+If you just want a test instance with the same instance type as is currently
+used in production, you can create that more simply at the command line:
 ```
 git checkout prod
 make grab-server-data
+make vm-clone  # and copy the reported instance ID
 git checkout test
+```
+Then copy the reported instance ID into `deploy.toml`.  Then:
+```
+make vm-reset-ip vm-rename
+```
+to assign the test Elastic IP to that instance.
+
+Then follow the procedure "Deploy to AWS for the first time" above, except
+`git checkout test` just after `git fetch`.  And instead of initializing the
+database with empty data, just copy up the production data that you grabbed
+earlier:
+```
 make publish-db-to-server
 ```
    
@@ -521,25 +533,21 @@ transition that to production.  Start on the dev machine.
 1. Bring the `prod` branch up to date with `test`.
    ```
    git checkout prod
-   git log
-   export oldInstance=the current version tag or commit hash
-   ```
-   
-   Then merge from the test branch.
-   ```
+   git tag -f last-prod
    git merge test
    ```
    This will leave the prod branch with the updated, tested code and the new instance ID.
 
    If it acquired the test values for `hostname` or `tld` by accident,
-   edit `conf/deploy.toml` to restore the production values.
+   edit `conf/deploy.toml` to restore the production values,
+   or use `git restore -s last-prod conf/deploy.toml`.
 
    Bump the version and add a new tag for this release, as described in "Quick
    Deploy" above, commit, and push.  Merge that commit back to master.
 
 1. If you're using SQLite in production, make the final snapshot of the database and leave it offline.
    ```
-   git checkout $oldInstance
+   git checkout last-prod
    make lock-server-data grab-server-data-live
    ```
    **This is the beginning of production system downtime.**
@@ -582,12 +590,12 @@ transition that to production.  Start on the dev machine.
    ```
    exit  # from the server back to dev
    git reset config  # from blessing the IP address
-   git checkout $oldInstance  # the tag or commit hash noted earlier
+   git checkout last-prod  # the tag or commit hash noted earlier
    make vm-reset-ip  # assign prod IP to old prod instance
    # make publish-db-to-server-live  # optional, if using SQLite and there were changes
    make unlock-db
    ```
-   This will end production downtime.
+   This will end production downtime.  You can `make diagnose` to confirm all is well.
 
    Then reactivate the test instance, so you can do further testing with it:
    ```
@@ -602,7 +610,7 @@ transition that to production.  Start on the dev machine.
    exit  # from the server back to dev/prod
    git commit -am "Promoted test server to prod."
    git push
-   git checkout $oldInstance
+   git checkout last-prod
    make vm-delete
    git checkout prod
    make vm-rename
