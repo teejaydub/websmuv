@@ -4,9 +4,9 @@ server {
     server_name $tld $hostname;
 
     root /var/www/html/maintenance;
-    index index.html;
     location / {
-            try_files $uri $uri/ =404;
+        # Rewrites any URL pattern to /maintenance.html and stops processing
+        rewrite ^ /index.html break;
     }
 }
 
@@ -15,9 +15,9 @@ server {
     server_name  $tld $hostname;
 
     root /var/www/html/maintenance;
-    index index.html;
     location / {
-            try_files $uri $uri/ =404;
+        # Rewrites any URL pattern to /maintenance.html and stops processing
+        rewrite ^ /index.html break;
     }
 
     # Use the Let's Encrypt certificates for HTTPS.
