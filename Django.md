@@ -211,13 +211,14 @@ get started, do this from dev:
 make publish-db-to-production
 ```
 
-## Quick Deploy, for typical feature updates and bug fixes
+## Quick Deploy
+For typical feature updates and bug fixes.
 
 Deployed servers are updated by pulling the latest code on the deployment
 branch from GitHub. New production releases should follow this first, to
 document that it was released:
 
-1. `git checkout master`
+1. `git checkout main`  (or `master` for older projects)
 1. Bump the `version` in `pyproject.toml`, following semantic versioning.
 1. `make update-dev test`
 1. `git commit -am "Bumped to 1.15.7."`  (e.g.)
@@ -239,6 +240,13 @@ If something doesn't work, try `make diagnose` on the server to check the
 status of each piece of the stack, from bottom up.  It'll stop when something
 doesn't seem to be working.
 
+Once it's working:
+```
+exit  # back to dev on prod
+git tag -f last-prod
+```
+This ensures that you can easily return to the last known good production code,
+compare to it, etc.
 
 ### Solving update problems
 
